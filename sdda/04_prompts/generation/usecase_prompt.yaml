@@ -1,0 +1,181 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# PROMPT TEMPLATE: Generación de UseCase
+# ═══════════════════════════════════════════════════════════════════════════════
+
+id: generate_usecase
+version: "1.0"
+category: generation
+description: "Genera un UseCase siguiendo Clean Architecture"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PARÁMETROS REQUERIDOS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+parameters:
+  required:
+    - name: feature_name
+      type: string
+      description: "Nombre del feature (ej: auth, products)"
+      example: "auth"
+
+    - name: usecase_name
+      type: string
+      description: "Nombre del caso de uso (ej: Login, GetProducts)"
+      example: "Login"
+
+    - name: return_type
+      type: string
+      description: "Tipo de retorno exitoso"
+      example: "User"
+
+    - name: repository_name
+      type: string
+      description: "Nombre del repositorio a usar"
+      example: "AuthRepository"
+
+  optional:
+    - name: params
+      type: list
+      description: "Lista de parámetros del UseCase"
+      default: []
+      schema:
+        - name: string
+        - type: string
+        - required: boolean
+        - validation: string
+
+    - name: validations
+      type: list
+      description: "Validaciones a aplicar antes de ejecutar"
+      default: []
+
+    - name: repository_method
+      type: string
+      description: "Método del repository a llamar"
+      default: "{{usecase_name | lower}}"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CONTEXTO REQUERIDO
+# ═══════════════════════════════════════════════════════════════════════════════
+
+required_context:
+  - file: "sdda/03_context/patterns/examples/example_usecase.dart"
+    purpose: "Patrón de referencia para estructura"
+
+  - file: "sdda/03_context/conventions/CONVENTIONS.md"
+    purpose: "Convenciones de nombrado"
+
+  - file: "sdda/03_context/architecture/ARCHITECTURE.md"
+    purpose: "Ubicación en arquitectura"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TEMPLATE DEL PROMPT
+# ═══════════════════════════════════════════════════════════════════════════════
+
+prompt_template: |
+  ## Tarea
+  Genera un UseCase llamado `{{usecase_name}}UseCase` para el feature `{{feature_name}}`.
+
+  ## Especificación
+
+  ### Información Base
+  - **Feature**: {{feature_name}}
+  - **Nombre UseCase**: {{usecase_name}}UseCase
+  - **Tipo de Retorno**: Either<Failure, {{return_type}}>
+  - **Repository**: {{repository_name}}
+  - **Método Repository**: {{repository_method}}
+
+  ### Parámetros
+  {% if params %}
+  El UseCase recibe los siguientes parámetros:
+  {% for param in params %}
+  - `{{param.name}}` ({{param.type}}){% if param.required %} - REQUERIDO{% endif %}
+    {% if param.validation %}- Validación: {{param.validation}}{% endif %}
+  {% endfor %}
+  {% else %}
+  Este UseCase no requiere parámetros (usar `NoParams`).
+  {% endif %}
+
+  ### Validaciones
+  {% if validations %}
+  Antes de llamar al repository, validar:
+  {% for validation in validations %}
+  - {{validation}}
+  {% endfor %}
+  {% else %}
+  Sin validaciones adicionales requeridas.
+  {% endif %}
+
+  ## Archivos a Generar
+
+  1. `lib/features/{{feature_name}}/domain/usecases/{{usecase_name | snake_case}}_usecase.dart`
+  {% if params %}
+  2. Clase `{{usecase_name}}Params` en el mismo archivo
+  {% endif %}
+
+  ## Requisitos de Implementación
+
+  1. Usar anotación `@lazySingleton` para registro en DI
+  2. Implementar interface `UseCase<{{return_type}}, {{usecase_name}}Params>`
+  3. Constructor con `{{repository_name}}` como dependencia
+  4. Método `call()` que retorna `Future<Either<Failure, {{return_type}}>>`
+  5. Documentación con `///` para clase y método call
+  {% if params %}
+  6. Clase `{{usecase_name}}Params` extendiendo `Equatable`
+  {% endif %}
+
+  ## Patrón de Referencia
+  Seguir EXACTAMENTE el patrón en:
+  `sdda/03_context/patterns/examples/example_usecase.dart`
+
+  ## Formato de Salida
+  Genera el código completo del archivo, listo para copiar.
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# EJEMPLO DE USO
+# ═══════════════════════════════════════════════════════════════════════════════
+
+example:
+  input:
+    feature_name: "auth"
+    usecase_name: "Login"
+    return_type: "User"
+    repository_name: "AuthRepository"
+    params:
+      - name: "email"
+        type: "String"
+        required: true
+        validation: "Debe ser email válido"
+      - name: "password"
+        type: "String"
+        required: true
+        validation: "Mínimo 6 caracteres"
+    validations:
+      - "Email no puede estar vacío"
+      - "Password debe tener mínimo 6 caracteres"
+    repository_method: "login"
+
+  expected_output_structure:
+    - "lib/features/auth/domain/usecases/login_usecase.dart"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# VALIDACIÓN DE SALIDA
+# ═══════════════════════════════════════════════════════════════════════════════
+
+output_validation:
+  must_contain:
+    - "@lazySingleton"
+    - "implements UseCase"
+    - "Future<Either<Failure"
+    - "extends Equatable"
+
+  must_not_contain:
+    - "throw Exception"
+    - "print("
+    - "// TODO"
+
+  structure_checks:
+    - "Clase UseCase con anotación @lazySingleton"
+    - "Constructor recibiendo repository"
+    - "Método call() con firma correcta"
+    - "Clase Params si hay parámetros"

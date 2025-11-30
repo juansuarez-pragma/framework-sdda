@@ -1,0 +1,208 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# PROMPT TEMPLATE: Generación de BLoC
+# ═══════════════════════════════════════════════════════════════════════════════
+
+id: generate_bloc
+version: "1.0"
+category: generation
+description: "Genera un BLoC completo con Events y States"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PARÁMETROS REQUERIDOS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+parameters:
+  required:
+    - name: feature_name
+      type: string
+      description: "Nombre del feature"
+      example: "product"
+
+    - name: bloc_name
+      type: string
+      description: "Nombre base del BLoC (sin sufijo Bloc)"
+      example: "Product"
+
+  optional:
+    - name: events
+      type: list
+      description: "Lista de eventos que maneja el BLoC"
+      default: []
+      schema:
+        - name: string
+        - description: string
+        - params: list
+
+    - name: states
+      type: list
+      description: "Lista de estados posibles"
+      default:
+        - name: "Initial"
+        - name: "Loading"
+        - name: "Loaded"
+        - name: "Error"
+
+    - name: usecases
+      type: list
+      description: "UseCases que utiliza el BLoC"
+      default: []
+
+    - name: supports_pagination
+      type: boolean
+      description: "Si el BLoC maneja paginación"
+      default: false
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CONTEXTO REQUERIDO
+# ═══════════════════════════════════════════════════════════════════════════════
+
+required_context:
+  - file: "sdda/03_context/patterns/examples/example_bloc.dart"
+    purpose: "Patrón de referencia"
+
+  - file: "sdda/03_context/conventions/CONVENTIONS.md"
+    section: "BLoC / State Management"
+    purpose: "Convenciones de Events y States"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TEMPLATE DEL PROMPT
+# ═══════════════════════════════════════════════════════════════════════════════
+
+prompt_template: |
+  ## Tarea
+  Genera un BLoC completo llamado `{{bloc_name}}Bloc` para el feature `{{feature_name}}`.
+
+  ## Especificación
+
+  ### Información Base
+  - **Feature**: {{feature_name}}
+  - **Nombre BLoC**: {{bloc_name}}Bloc
+  - **Soporta Paginación**: {{supports_pagination}}
+
+  ### UseCases Requeridos
+  {% if usecases %}
+  El BLoC utiliza los siguientes UseCases:
+  {% for usecase in usecases %}
+  - `{{usecase}}`
+  {% endfor %}
+  {% else %}
+  No se especificaron UseCases.
+  {% endif %}
+
+  ### Eventos
+  {% if events %}
+  {% for event in events %}
+  #### {{event.name}}
+  - Descripción: {{event.description}}
+  {% if event.params %}
+  - Parámetros:
+  {% for param in event.params %}
+    - `{{param.name}}`: {{param.type}}
+  {% endfor %}
+  {% endif %}
+  {% endfor %}
+  {% else %}
+  Definir eventos estándar según el patrón.
+  {% endif %}
+
+  ### Estados
+  {% for state in states %}
+  - `{{bloc_name}}{{state.name}}`{% if state.description %}: {{state.description}}{% endif %}
+  {% endfor %}
+
+  ## Archivos a Generar
+
+  1. `lib/features/{{feature_name}}/presentation/bloc/{{feature_name}}_event.dart`
+  2. `lib/features/{{feature_name}}/presentation/bloc/{{feature_name}}_state.dart`
+  3. `lib/features/{{feature_name}}/presentation/bloc/{{feature_name}}_bloc.dart`
+
+  ## Requisitos de Implementación
+
+  ### Events ({{feature_name}}_event.dart)
+  1. Usar `sealed class` para exhaustividad
+  2. Clase base `{{bloc_name}}Event extends Equatable`
+  3. Cada evento con sus props en `List<Object?> get props`
+  4. Constructores `const`
+
+  ### States ({{feature_name}}_state.dart)
+  1. Usar `sealed class` para exhaustividad
+  2. Clase base `{{bloc_name}}State extends Equatable`
+  3. Estado `{{bloc_name}}Loaded` con método `copyWith`
+  4. Estado `{{bloc_name}}Error` con `message` y opcional `previousData`
+
+  ### BLoC ({{feature_name}}_bloc.dart)
+  1. Anotación `@injectable`
+  2. Registrar handlers con `on<Event>` en constructor
+  3. Handlers como métodos privados `_onEventName`
+  4. Usar `result.fold()` para manejar Either
+  5. Emitir estados apropiados
+
+  {% if supports_pagination %}
+  ### Paginación
+  - Mantener `_currentPage` como variable privada
+  - Estado `{{bloc_name}}LoadingMore` para carga adicional
+  - Verificar `hasMore` antes de cargar más
+  - Concatenar listas en lugar de reemplazar
+  {% endif %}
+
+  ## Patrón de Referencia
+  Seguir EXACTAMENTE el patrón en:
+  `sdda/03_context/patterns/examples/example_bloc.dart`
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# EJEMPLO DE USO
+# ═══════════════════════════════════════════════════════════════════════════════
+
+example:
+  input:
+    feature_name: "product"
+    bloc_name: "Product"
+    supports_pagination: true
+    usecases:
+      - "GetProductsUseCase"
+      - "GetProductByIdUseCase"
+    events:
+      - name: "LoadProducts"
+        description: "Carga inicial de productos"
+        params:
+          - name: "page"
+            type: "int"
+          - name: "category"
+            type: "String?"
+      - name: "RefreshProducts"
+        description: "Pull-to-refresh"
+      - name: "LoadMoreProducts"
+        description: "Paginación infinita"
+    states:
+      - name: "Initial"
+      - name: "Loading"
+      - name: "Loaded"
+        description: "Con lista de productos"
+      - name: "LoadingMore"
+        description: "Cargando página adicional"
+      - name: "Error"
+      - name: "Empty"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# VALIDACIÓN DE SALIDA
+# ═══════════════════════════════════════════════════════════════════════════════
+
+output_validation:
+  must_contain:
+    - "sealed class"
+    - "extends Equatable"
+    - "@injectable"
+    - "extends Bloc<"
+    - "on<"
+    - "emit("
+    - "result.fold("
+
+  must_not_contain:
+    - "setState"
+    - "notifyListeners"
+    - "print("
+
+  file_structure:
+    - "_event.dart contiene solo Events"
+    - "_state.dart contiene solo States"
+    - "_bloc.dart contiene solo el BLoC"

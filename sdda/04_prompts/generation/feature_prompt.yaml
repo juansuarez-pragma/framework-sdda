@@ -1,0 +1,236 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# PROMPT TEMPLATE: Generación de Feature Completo
+# ═══════════════════════════════════════════════════════════════════════════════
+
+id: generate_feature
+version: "1.0"
+category: generation
+description: "Genera un feature completo con todas sus capas"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PARÁMETROS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+parameters:
+  required:
+    - name: feature_name
+      type: string
+      description: "Nombre del feature en snake_case"
+      example: "auth"
+
+    - name: entities
+      type: list
+      description: "Entidades del dominio"
+      schema:
+        - name: string
+        - properties: list
+
+    - name: usecases
+      type: list
+      description: "Casos de uso a implementar"
+      schema:
+        - name: string
+        - description: string
+        - params: list
+        - return_type: string
+
+  optional:
+    - name: has_remote_datasource
+      type: boolean
+      default: true
+
+    - name: has_local_datasource
+      type: boolean
+      default: true
+
+    - name: api_endpoints
+      type: list
+      description: "Endpoints de API si aplica"
+      default: []
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TEMPLATE DEL PROMPT
+# ═══════════════════════════════════════════════════════════════════════════════
+
+prompt_template: |
+  ## Tarea
+  Genera el feature `{{feature_name}}` completo siguiendo Clean Architecture.
+
+  ## Especificación del Feature
+
+  ### Información General
+  - **Nombre**: {{feature_name}}
+  - **DataSource Remoto**: {{has_remote_datasource}}
+  - **DataSource Local**: {{has_local_datasource}}
+
+  ### Entidades
+  {% for entity in entities %}
+  #### {{entity.name}}
+  Propiedades:
+  {% for prop in entity.properties %}
+  - `{{prop.name}}`: {{prop.type}}{% if prop.required %} (requerido){% endif %}
+  {% endfor %}
+  {% endfor %}
+
+  ### Casos de Uso
+  {% for usecase in usecases %}
+  #### {{usecase.name}}
+  - **Descripción**: {{usecase.description}}
+  - **Retorno**: {{usecase.return_type}}
+  {% if usecase.params %}
+  - **Parámetros**:
+  {% for param in usecase.params %}
+    - `{{param.name}}`: {{param.type}}
+  {% endfor %}
+  {% endif %}
+  {% endfor %}
+
+  {% if api_endpoints %}
+  ### Endpoints de API
+  {% for endpoint in api_endpoints %}
+  - `{{endpoint.method}} {{endpoint.path}}` - {{endpoint.description}}
+  {% endfor %}
+  {% endif %}
+
+  ## Estructura de Archivos a Generar
+
+  ```
+  lib/features/{{feature_name}}/
+  ├── data/
+  │   ├── datasources/
+  │   │   {% if has_remote_datasource %}├── {{feature_name}}_remote_datasource.dart{% endif %}
+  │   │   {% if has_local_datasource %}└── {{feature_name}}_local_datasource.dart{% endif %}
+  │   ├── models/
+  │   │   {% for entity in entities %}├── {{entity.name | snake_case}}_model.dart
+  │   │   {% endfor %}
+  │   └── repositories/
+  │       └── {{feature_name}}_repository_impl.dart
+  │
+  ├── domain/
+  │   ├── entities/
+  │   │   {% for entity in entities %}├── {{entity.name | snake_case}}.dart
+  │   │   {% endfor %}
+  │   ├── repositories/
+  │   │   └── {{feature_name}}_repository.dart
+  │   └── usecases/
+  │       {% for usecase in usecases %}├── {{usecase.name | snake_case}}_usecase.dart
+  │       {% endfor %}
+  │
+  └── presentation/
+      ├── bloc/
+      │   ├── {{feature_name}}_bloc.dart
+      │   ├── {{feature_name}}_event.dart
+      │   └── {{feature_name}}_state.dart
+      ├── pages/
+      │   └── {{feature_name}}_page.dart
+      └── widgets/
+          └── (widgets específicos)
+  ```
+
+  ## Orden de Generación
+
+  ### Fase 1: Domain Layer (sin dependencias)
+  1. Entities
+  2. Repository Interface
+  3. UseCases
+
+  ### Fase 2: Data Layer (implementa domain)
+  4. Models (con toEntity() y fromJson())
+  5. DataSources (interfaces)
+  6. Repository Implementation
+
+  ### Fase 3: Presentation Layer (usa domain)
+  7. BLoC Events
+  8. BLoC States
+  9. BLoC
+  10. Page
+
+  ## Requisitos por Componente
+
+  ### Entity
+  - Clase inmutable con const constructor
+  - Extiende Equatable
+  - Solo propiedades, sin lógica de negocio
+  - Sin dependencias externas
+
+  ### Model
+  - Extiende Entity o tiene referencia a ella
+  - Método `toEntity()` para convertir a entidad
+  - Factory `fromJson(Map<String, dynamic>)` para deserializar
+  - Método `toJson()` para serializar
+
+  ### Repository Interface
+  - Clase abstracta
+  - Métodos retornan `Future<Either<Failure, Type>>`
+  - Documentación de cada método
+
+  ### Repository Implementation
+  - Anotación `@LazySingleton(as: Interface)`
+  - Recibe datasources y NetworkInfo
+  - Maneja errores con try-catch
+  - Coordina entre remote y local
+
+  ### UseCase
+  - Anotación `@lazySingleton`
+  - Implementa `UseCase<T, Params>`
+  - Validación de entrada
+  - Delegación a repository
+
+  ### BLoC
+  - Anotación `@injectable`
+  - Un handler por evento
+  - Usa usecases, no repositories
+  - Emite estados apropiados
+
+  ## Genera cada archivo siguiendo los patrones de referencia en:
+  - `sdda/03_context/patterns/examples/`
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# EJEMPLO DE USO
+# ═══════════════════════════════════════════════════════════════════════════════
+
+example:
+  input:
+    feature_name: "auth"
+    has_remote_datasource: true
+    has_local_datasource: true
+    entities:
+      - name: "User"
+        properties:
+          - name: "id"
+            type: "String"
+            required: true
+          - name: "email"
+            type: "String"
+            required: true
+          - name: "name"
+            type: "String"
+            required: true
+          - name: "avatarUrl"
+            type: "String?"
+            required: false
+    usecases:
+      - name: "Login"
+        description: "Autentica usuario con email y contraseña"
+        return_type: "User"
+        params:
+          - name: "email"
+            type: "String"
+          - name: "password"
+            type: "String"
+      - name: "Logout"
+        description: "Cierra sesión del usuario"
+        return_type: "void"
+      - name: "GetCurrentUser"
+        description: "Obtiene usuario autenticado"
+        return_type: "User?"
+    api_endpoints:
+      - method: "POST"
+        path: "/auth/login"
+        description: "Login con credenciales"
+      - method: "POST"
+        path: "/auth/logout"
+        description: "Cerrar sesión"
+      - method: "GET"
+        path: "/auth/me"
+        description: "Usuario actual"

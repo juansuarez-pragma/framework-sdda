@@ -1,0 +1,269 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# SDDA - Specification-Driven Development for AI Agents
+# Configuración Principal
+# ═══════════════════════════════════════════════════════════════════════════════
+
+version: "1.0"
+name: "SDDA Framework"
+description: "Framework para generación de código con IA guiada por especificaciones"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CONFIGURACIÓN DEL PROYECTO
+# ═══════════════════════════════════════════════════════════════════════════════
+
+project:
+  name: "mi_proyecto_flutter"
+  package_name: "com.example.mi_proyecto"
+  flutter_version: "3.24.0"
+  dart_version: "3.5.0"
+
+  # Arquitectura base
+  architecture: "clean_architecture"
+  state_management: "bloc"
+  di_framework: "get_it_injectable"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PROVEEDORES DE IA
+# ═══════════════════════════════════════════════════════════════════════════════
+
+ai_providers:
+  default: "claude"
+
+  providers:
+    - name: "claude"
+      enabled: true
+      model: "claude-sonnet-4-20250514"
+      api_key_env: "ANTHROPIC_API_KEY"
+      max_tokens: 8192
+      temperature: 0.1  # Bajo para consistencia
+
+    - name: "openai"
+      enabled: true
+      model: "gpt-4-turbo-preview"
+      api_key_env: "OPENAI_API_KEY"
+      max_tokens: 8192
+      temperature: 0.1
+
+    - name: "gemini"
+      enabled: true
+      model: "gemini-pro"
+      api_key_env: "GOOGLE_API_KEY"
+      max_tokens: 8192
+      temperature: 0.1
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CONFIGURACIÓN DE GENERACIÓN
+# ═══════════════════════════════════════════════════════════════════════════════
+
+generation:
+  # Reintentos si los tests fallan
+  max_retries: 3
+
+  # Validaciones automáticas
+  validations:
+    syntax_check: true
+    format_check: true
+    analyze_check: true
+    run_contract_tests: true
+
+  # Auto-formateo del código generado
+  auto_format: true
+
+  # Guardar prompts usados para debugging
+  save_prompts: true
+  prompts_log_dir: ".sdda/prompts_log"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CONFIGURACIÓN DE TESTING
+# ═══════════════════════════════════════════════════════════════════════════════
+
+testing:
+  # Tests Unitarios
+  unit:
+    enabled: true
+    coverage_threshold: 80
+    timeout: "5m"
+    patterns:
+      - "test/**/*_test.dart"
+      - "sdda/02_contracts/unit/**/*_test.dart"
+    exclude:
+      - "**/*.g.dart"
+      - "**/*.mocks.dart"
+
+  # Tests de Widget
+  widget:
+    enabled: true
+    coverage_threshold: 75
+    timeout: "10m"
+    patterns:
+      - "sdda/02_contracts/widget/**/*_test.dart"
+
+  # Golden Tests
+  golden:
+    enabled: true
+    update_on_failure: false
+    tolerance: 0.001
+    devices:
+      - name: "phone"
+        width: 375
+        height: 812
+        pixel_ratio: 3.0
+      - name: "tablet"
+        width: 768
+        height: 1024
+        pixel_ratio: 2.0
+
+  # Tests de Integración
+  integration:
+    enabled: true
+    timeout: "30m"
+    retry_count: 2
+    patterns:
+      - "sdda/02_contracts/integration/**/*_test.dart"
+      - "integration_test/**/*_test.dart"
+
+  # Tests E2E
+  e2e:
+    enabled: true
+    timeout: "30m"
+    framework: "patrol"
+    device_farm:
+      provider: "firebase_test_lab"
+      enabled: false  # Habilitar cuando esté configurado
+      devices:
+        android:
+          - model: "Pixel6"
+            version: "33"
+          - model: "Pixel4"
+            version: "30"
+        ios:
+          - model: "iphone14"
+            version: "16.6"
+
+  # Mutation Testing
+  mutation:
+    enabled: false  # Habilitar para análisis profundo
+    schedule: "weekly"
+    threshold: 70
+    target_files:
+      - "lib/core/**/*.dart"
+      - "lib/features/**/domain/**/*.dart"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# QUALITY GATES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+quality_gates:
+  # Cobertura de código
+  coverage:
+    lines: 80
+    branches: 75
+    functions: 85
+    new_code: 90
+
+  # Complejidad
+  complexity:
+    cyclomatic_max: 10
+    cognitive_max: 15
+
+  # Duplicación
+  duplication:
+    max_percentage: 3
+
+  # Análisis estático
+  static_analysis:
+    errors: 0
+    warnings: 0
+    infos: -1  # -1 = sin límite
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PATHS DE CONTEXTO
+# ═══════════════════════════════════════════════════════════════════════════════
+
+context:
+  architecture_doc: "sdda/03_context/architecture/ARCHITECTURE.md"
+  patterns_dir: "sdda/03_context/patterns"
+  conventions_doc: "sdda/03_context/conventions/CONVENTIONS.md"
+  api_catalog: "sdda/03_context/apis/API_CATALOG.md"
+  schemas_dir: "sdda/03_context/schemas"
+  glossary: "sdda/03_context/glossary/GLOSSARY.md"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PATHS DE PROMPTS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+prompts:
+  system_prompt: "sdda/04_prompts/system/base_system_prompt.md"
+  generation_dir: "sdda/04_prompts/generation"
+  testing_dir: "sdda/04_prompts/testing"
+  review_dir: "sdda/04_prompts/review"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CI/CD
+# ═══════════════════════════════════════════════════════════════════════════════
+
+ci:
+  provider: "github_actions"
+
+  triggers:
+    push:
+      branches: ["main", "develop"]
+    pull_request:
+      branches: ["main", "develop"]
+    schedule:
+      - cron: "0 6 * * *"  # Nightly builds
+
+  jobs:
+    analyze:
+      runs_on: "ubuntu-latest"
+      steps: ["lint", "format", "analyze"]
+
+    test:
+      runs_on: "ubuntu-latest"
+      needs: ["analyze"]
+      steps: ["unit_tests", "widget_tests", "coverage_report"]
+
+    golden:
+      runs_on: "macos-latest"
+      needs: ["analyze"]
+      steps: ["golden_tests"]
+
+    integration:
+      runs_on: "ubuntu-latest"
+      needs: ["test"]
+      steps: ["build_apk", "integration_tests"]
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# NOTIFICACIONES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+notifications:
+  slack:
+    enabled: false
+    webhook_env: "SLACK_WEBHOOK"
+    on_failure: true
+    on_success: false
+
+  email:
+    enabled: false
+    recipients: []
+    on_failure: true
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# HERRAMIENTAS EXTERNAS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+tools:
+  sonarqube:
+    enabled: false
+    host_env: "SONAR_HOST"
+    token_env: "SONAR_TOKEN"
+    project_key: "mi-flutter-app"
+
+  codecov:
+    enabled: false
+    token_env: "CODECOV_TOKEN"
+
+  sentry:
+    enabled: false
+    dsn_env: "SENTRY_DSN"

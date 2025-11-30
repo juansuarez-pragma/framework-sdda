@@ -1,0 +1,177 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# PROMPT TEMPLATE: Validación y Revisión de Código
+# ═══════════════════════════════════════════════════════════════════════════════
+
+id: code_review
+version: "1.0"
+category: validation
+description: "Valida que el código generado cumple con arquitectura y convenciones"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PARÁMETROS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+parameters:
+  required:
+    - name: code_to_review
+      type: string
+      description: "Código a revisar"
+
+    - name: file_type
+      type: enum
+      values: ["usecase", "bloc", "repository", "model", "entity", "widget", "page"]
+      description: "Tipo de archivo para aplicar reglas específicas"
+
+    - name: file_path
+      type: string
+      description: "Ruta donde debería estar el archivo"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TEMPLATE DEL PROMPT
+# ═══════════════════════════════════════════════════════════════════════════════
+
+prompt_template: |
+  ## Tarea
+  Revisa el siguiente código y verifica que cumple con todas las convenciones y arquitectura del proyecto.
+
+  ## Código a Revisar
+  **Archivo**: `{{file_path}}`
+  **Tipo**: {{file_type}}
+
+  ```dart
+  {{code_to_review}}
+  ```
+
+  ## Checklist de Validación
+
+  ### 1. Ubicación Correcta
+  {% if file_type == 'usecase' %}
+  - [ ] Está en `features/[feature]/domain/usecases/`
+  - [ ] Nombre termina en `_usecase.dart`
+  {% elif file_type == 'bloc' %}
+  - [ ] Está en `features/[feature]/presentation/bloc/`
+  - [ ] Nombre termina en `_bloc.dart`
+  {% elif file_type == 'repository' %}
+  - [ ] Interface en `features/[feature]/domain/repositories/`
+  - [ ] Implementación en `features/[feature]/data/repositories/`
+  {% elif file_type == 'model' %}
+  - [ ] Está en `features/[feature]/data/models/`
+  - [ ] Nombre termina en `_model.dart`
+  {% elif file_type == 'entity' %}
+  - [ ] Está en `features/[feature]/domain/entities/`
+  - [ ] Nombre sin sufijo especial
+  {% endif %}
+
+  ### 2. Estructura de Código
+  {% if file_type == 'usecase' %}
+  - [ ] Tiene anotación `@lazySingleton`
+  - [ ] Implementa `UseCase<ReturnType, Params>`
+  - [ ] Constructor recibe repository
+  - [ ] Método `call()` retorna `Future<Either<Failure, Type>>`
+  - [ ] Tiene clase Params que extiende Equatable (si aplica)
+  {% elif file_type == 'bloc' %}
+  - [ ] Tiene anotación `@injectable`
+  - [ ] Extiende `Bloc<Event, State>`
+  - [ ] Registra handlers en constructor con `on<Event>`
+  - [ ] Handlers son métodos privados `_onEventName`
+  - [ ] Usa `emit()` para emitir estados
+  - [ ] Usa `result.fold()` para manejar Either
+  {% elif file_type == 'repository' %}
+  - [ ] Interface es clase abstracta
+  - [ ] Implementación tiene `@LazySingleton(as: Interface)`
+  - [ ] Verifica conectividad con `_networkInfo.isConnected`
+  - [ ] Usa try-catch para excepciones
+  - [ ] Retorna `Either<Failure, Type>`
+  {% endif %}
+
+  ### 3. Convenciones de Nombrado
+  - [ ] Clases en PascalCase
+  - [ ] Variables y métodos en camelCase
+  - [ ] Archivos en snake_case
+  - [ ] Variables privadas con prefijo `_`
+  - [ ] Booleanos con prefijos is/has/can/should
+  - [ ] Callbacks con prefijo on
+
+  ### 4. Imports
+  - [ ] Ordenados: Dart SDK → Flutter → Externos → Proyecto
+  - [ ] Línea en blanco entre grupos
+  - [ ] Sin imports no utilizados
+
+  ### 5. Documentación
+  - [ ] Clases públicas documentadas con `///`
+  - [ ] Métodos públicos complejos documentados
+  - [ ] Sin comentarios innecesarios
+
+  ### 6. Manejo de Errores
+  - [ ] Usa `Either<Failure, Success>` (no excepciones)
+  - [ ] Failures específicos para cada caso
+  - [ ] Sin `throw Exception` en repositories/usecases
+
+  ### 7. Clean Architecture
+  {% if file_type == 'usecase' %}
+  - [ ] Solo importa de domain (entities, repositories interface)
+  - [ ] NO importa de data layer
+  - [ ] NO importa de presentation layer
+  {% elif file_type == 'bloc' %}
+  - [ ] Solo importa de domain (usecases, entities)
+  - [ ] NO importa de data layer
+  {% elif file_type == 'repository' %}
+  - [ ] Implementación puede importar de data y domain
+  - [ ] Interface solo tipos de domain
+  {% endif %}
+
+  ### 8. Código Limpio
+  - [ ] Sin código comentado
+  - [ ] Sin print() o debugPrint()
+  - [ ] Sin TODO sin issue asociado
+  - [ ] Trailing commas donde corresponde
+  - [ ] Líneas < 80 caracteres (preferido)
+
+  ## Formato de Respuesta
+
+  ### Resultado
+  **Estado**: [APROBADO / RECHAZADO / CON OBSERVACIONES]
+
+  ### Errores Críticos (bloquean aprobación)
+  1. [Error y cómo corregirlo]
+
+  ### Warnings (no bloquean pero deben corregirse)
+  1. [Warning y sugerencia]
+
+  ### Sugerencias (opcionales)
+  1. [Mejora sugerida]
+
+  ### Código Corregido (si hay errores)
+  ```dart
+  // Código con correcciones aplicadas
+  ```
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# REGLAS DE VALIDACIÓN AUTOMÁTICA
+# ═══════════════════════════════════════════════════════════════════════════════
+
+validation_rules:
+  critical_errors:
+    - pattern: "throw Exception"
+      message: "No usar throw Exception, usar Either<Failure, T>"
+
+    - pattern: "print\\("
+      message: "No usar print() en código de producción"
+
+    - pattern: "import.*data.*"
+      context: "domain_files"
+      message: "Domain layer no debe importar de data layer"
+
+    - pattern: "// TODO"
+      message: "TODOs deben tener issue asociado o resolverse"
+
+  warnings:
+    - pattern: "dynamic"
+      message: "Evitar uso de dynamic, usar tipos específicos"
+
+    - pattern: "as "
+      message: "Evitar casting con 'as', usar pattern matching"
+
+    - pattern: "!"
+      context: "null_assertion"
+      message: "Evitar null assertion (!), manejar null explícitamente"

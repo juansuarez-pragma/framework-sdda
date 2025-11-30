@@ -1,0 +1,221 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# PROMPT TEMPLATE: Generación de Repository
+# ═══════════════════════════════════════════════════════════════════════════════
+
+id: generate_repository
+version: "1.0"
+category: generation
+description: "Genera Repository interface e implementación"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PARÁMETROS REQUERIDOS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+parameters:
+  required:
+    - name: feature_name
+      type: string
+      description: "Nombre del feature"
+      example: "auth"
+
+    - name: repository_name
+      type: string
+      description: "Nombre del repository (sin sufijo)"
+      example: "Auth"
+
+    - name: methods
+      type: list
+      description: "Métodos del repository"
+      schema:
+        - name: string
+        - return_type: string
+        - params: list
+        - description: string
+
+  optional:
+    - name: has_local_datasource
+      type: boolean
+      default: true
+      description: "Si tiene datasource local para caché"
+
+    - name: has_remote_datasource
+      type: boolean
+      default: true
+      description: "Si tiene datasource remoto"
+
+    - name: entities
+      type: list
+      description: "Entidades que maneja el repository"
+      default: []
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CONTEXTO REQUERIDO
+# ═══════════════════════════════════════════════════════════════════════════════
+
+required_context:
+  - file: "sdda/03_context/patterns/examples/example_repository.dart"
+    purpose: "Patrón de referencia"
+
+  - file: "sdda/03_context/architecture/ARCHITECTURE.md"
+    section: "Manejo de Errores"
+    purpose: "Patrón Either y Failures"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TEMPLATE DEL PROMPT
+# ═══════════════════════════════════════════════════════════════════════════════
+
+prompt_template: |
+  ## Tarea
+  Genera el Repository `{{repository_name}}Repository` para el feature `{{feature_name}}`.
+
+  ## Especificación
+
+  ### Información Base
+  - **Feature**: {{feature_name}}
+  - **Repository**: {{repository_name}}Repository
+  - **Tiene DataSource Local**: {{has_local_datasource}}
+  - **Tiene DataSource Remoto**: {{has_remote_datasource}}
+
+  ### Entidades
+  {% if entities %}
+  {% for entity in entities %}
+  - `{{entity}}`
+  {% endfor %}
+  {% else %}
+  Definir según los métodos especificados.
+  {% endif %}
+
+  ### Métodos a Implementar
+  {% for method in methods %}
+  #### {{method.name}}
+  - **Retorno**: `Future<Either<Failure, {{method.return_type}}>>`
+  - **Descripción**: {{method.description}}
+  {% if method.params %}
+  - **Parámetros**:
+  {% for param in method.params %}
+    - `{{param.name}}`: {{param.type}}{% if param.required %} (requerido){% endif %}
+  {% endfor %}
+  {% endif %}
+  {% endfor %}
+
+  ## Archivos a Generar
+
+  ### 1. Interface (Domain Layer)
+  `lib/features/{{feature_name}}/domain/repositories/{{feature_name}}_repository.dart`
+
+  ### 2. Implementación (Data Layer)
+  `lib/features/{{feature_name}}/data/repositories/{{feature_name}}_repository_impl.dart`
+
+  {% if has_remote_datasource %}
+  ### 3. DataSource Remoto (Interface)
+  `lib/features/{{feature_name}}/data/datasources/{{feature_name}}_remote_datasource.dart`
+  {% endif %}
+
+  {% if has_local_datasource %}
+  ### 4. DataSource Local (Interface)
+  `lib/features/{{feature_name}}/data/datasources/{{feature_name}}_local_datasource.dart`
+  {% endif %}
+
+  ## Requisitos de Implementación
+
+  ### Interface (Domain)
+  1. Clase abstracta sin dependencias externas
+  2. Métodos retornan `Future<Either<Failure, Type>>`
+  3. Documentación con `///` explicando cada método
+  4. No usar tipos de Data layer (Models), solo Entities
+
+  ### Implementación (Data)
+  1. Anotación `@LazySingleton(as: {{repository_name}}Repository)`
+  2. Dependencias:
+     {% if has_remote_datasource %}- `{{repository_name}}RemoteDataSource`{% endif %}
+     {% if has_local_datasource %}- `{{repository_name}}LocalDataSource`{% endif %}
+     - `NetworkInfo`
+  3. Constructor con parámetros nombrados required
+  4. Cada método debe:
+     - Verificar conectividad con `_networkInfo.isConnected`
+     - Usar try-catch para manejar excepciones
+     - Convertir Models a Entities con `.toEntity()`
+     - Retornar `Left(Failure)` o `Right(Entity)`
+
+  ### Patrón de Manejo de Errores
+  ```dart
+  try {
+    // Operación
+    return Right(result.toEntity());
+  } on ServerException catch (e) {
+    return Left(ServerFailure(e.message));
+  } on CacheException {
+    return Left(CacheFailure());
+  } on Exception catch (e) {
+    return Left(ServerFailure('Error inesperado: $e'));
+  }
+  ```
+
+  ### DataSources
+  1. Interfaces abstractas
+  2. Métodos retornan Models (no Entities)
+  3. Lanzan excepciones específicas (ServerException, CacheException)
+
+  ## Patrón de Referencia
+  Seguir EXACTAMENTE el patrón en:
+  `sdda/03_context/patterns/examples/example_repository.dart`
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# EJEMPLO DE USO
+# ═══════════════════════════════════════════════════════════════════════════════
+
+example:
+  input:
+    feature_name: "auth"
+    repository_name: "Auth"
+    has_local_datasource: true
+    has_remote_datasource: true
+    entities:
+      - "User"
+    methods:
+      - name: "login"
+        return_type: "User"
+        description: "Autentica usuario con credenciales"
+        params:
+          - name: "email"
+            type: "String"
+            required: true
+          - name: "password"
+            type: "String"
+            required: true
+      - name: "logout"
+        return_type: "void"
+        description: "Cierra sesión del usuario actual"
+      - name: "getCurrentUser"
+        return_type: "User?"
+        description: "Obtiene el usuario autenticado actual"
+      - name: "isAuthenticated"
+        return_type: "bool"
+        description: "Verifica si hay sesión activa"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# VALIDACIÓN DE SALIDA
+# ═══════════════════════════════════════════════════════════════════════════════
+
+output_validation:
+  must_contain:
+    - "abstract class"
+    - "Future<Either<Failure"
+    - "@LazySingleton(as:"
+    - "implements"
+    - "_networkInfo.isConnected"
+    - "try {"
+    - "catch"
+    - "Left("
+    - "Right("
+
+  must_not_contain:
+    - "throw Exception"
+    - "print("
+    - "FutureOr"
+
+  architecture_rules:
+    - "Interface en domain/repositories/"
+    - "Implementación en data/repositories/"
+    - "DataSources en data/datasources/"
+    - "Interface no importa nada de data layer"

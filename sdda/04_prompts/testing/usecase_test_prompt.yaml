@@ -1,0 +1,229 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# PROMPT TEMPLATE: Generación de Tests para UseCase
+# ═══════════════════════════════════════════════════════════════════════════════
+
+id: generate_usecase_test
+version: "1.0"
+category: testing
+description: "Genera tests unitarios para un UseCase siguiendo TDD"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PARÁMETROS REQUERIDOS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+parameters:
+  required:
+    - name: feature_name
+      type: string
+      description: "Nombre del feature"
+
+    - name: usecase_name
+      type: string
+      description: "Nombre del UseCase a testear"
+
+    - name: repository_name
+      type: string
+      description: "Repository que usa el UseCase"
+
+    - name: return_type
+      type: string
+      description: "Tipo de retorno exitoso"
+
+  optional:
+    - name: test_scenarios
+      type: list
+      description: "Escenarios de test específicos"
+      default: []
+
+    - name: validations
+      type: list
+      description: "Validaciones que debe verificar"
+      default: []
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TEMPLATE DEL PROMPT
+# ═══════════════════════════════════════════════════════════════════════════════
+
+prompt_template: |
+  ## Tarea
+  Genera tests unitarios para `{{usecase_name}}UseCase` del feature `{{feature_name}}`.
+
+  ## Especificación
+
+  ### UseCase a Testear
+  - **Nombre**: {{usecase_name}}UseCase
+  - **Repository**: {{repository_name}}
+  - **Retorno**: Either<Failure, {{return_type}}>
+
+  ### Escenarios a Cubrir
+
+  #### Casos de Éxito
+  {% if test_scenarios %}
+  {% for scenario in test_scenarios %}
+  {% if scenario.type == 'success' %}
+  - {{scenario.description}}
+  {% endif %}
+  {% endfor %}
+  {% else %}
+  - Debe retornar {{return_type}} cuando la operación es exitosa
+  - Debe llamar al repository exactamente una vez
+  {% endif %}
+
+  #### Casos de Error
+  {% if test_scenarios %}
+  {% for scenario in test_scenarios %}
+  {% if scenario.type == 'error' %}
+  - {{scenario.description}}
+  {% endif %}
+  {% endfor %}
+  {% else %}
+  - Debe retornar ServerFailure cuando el servidor falla
+  - Debe retornar NetworkFailure cuando no hay conexión
+  {% endif %}
+
+  #### Validaciones
+  {% if validations %}
+  {% for validation in validations %}
+  - Debe retornar ValidationFailure cuando {{validation}}
+  {% endfor %}
+  {% endif %}
+
+  ## Archivo a Generar
+
+  `test/features/{{feature_name}}/domain/usecases/{{usecase_name | snake_case}}_usecase_test.dart`
+
+  ## Requisitos de Implementación
+
+  ### Estructura del Test
+  ```dart
+  void main() {
+    // 1. Declaraciones
+    late {{usecase_name}}UseCase sut;
+    late Mock{{repository_name}} mockRepository;
+
+    // 2. Test data con prefijo t
+    const tParam1 = 'test_value';
+    final tResult = {{return_type}}(...);
+
+    // 3. setUp
+    setUp(() {
+      mockRepository = Mock{{repository_name}}();
+      sut = {{usecase_name}}UseCase(mockRepository);
+    });
+
+    // 4. Grupos de tests
+    group('{{usecase_name}}UseCase', () {
+      group('casos de éxito', () {
+        // tests
+      });
+
+      group('casos de error', () {
+        // tests
+      });
+
+      group('validaciones', () {
+        // tests
+      });
+    });
+  }
+  ```
+
+  ### Patrón AAA (Arrange-Act-Assert)
+  ```dart
+  test('debe retornar X cuando Y', () async {
+    // Arrange
+    when(() => mockRepository.method(any()))
+        .thenAnswer((_) async => Right(tResult));
+
+    // Act
+    final result = await sut(params);
+
+    // Assert
+    expect(result, Right(tResult));
+    verify(() => mockRepository.method(any())).called(1);
+  });
+  ```
+
+  ### Mocks con Mocktail
+  ```dart
+  import 'package:mocktail/mocktail.dart';
+
+  class Mock{{repository_name}} extends Mock implements {{repository_name}} {}
+  ```
+
+  ### Convenciones de Nombrado
+  - `sut` para System Under Test
+  - Prefijo `t` para test data (tEmail, tUser, tParams)
+  - Prefijo `mock` para mocks
+  - Descripción: "debe [acción] cuando [condición]"
+
+  ## Tests Obligatorios
+
+  1. **Test de éxito básico**
+     - Configura mock para retornar éxito
+     - Verifica que retorna Right con datos esperados
+
+  2. **Test de llamada al repository**
+     - Verifica que repository es llamado con parámetros correctos
+     - Verifica que se llama exactamente una vez
+
+  3. **Test de propagación de errores**
+     - Configura mock para retornar failure
+     - Verifica que el failure se propaga correctamente
+
+  {% if validations %}
+  4. **Tests de validación**
+     {% for validation in validations %}
+     - Test para: {{validation}}
+     {% endfor %}
+  {% endif %}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# EJEMPLO DE USO
+# ═══════════════════════════════════════════════════════════════════════════════
+
+example:
+  input:
+    feature_name: "auth"
+    usecase_name: "Login"
+    repository_name: "AuthRepository"
+    return_type: "User"
+    validations:
+      - "email está vacío"
+      - "password tiene menos de 6 caracteres"
+    test_scenarios:
+      - type: "success"
+        description: "Retorna User cuando credenciales son válidas"
+      - type: "error"
+        description: "Retorna InvalidCredentialsFailure cuando password es incorrecto"
+      - type: "error"
+        description: "Retorna NetworkFailure cuando no hay conexión"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# VALIDACIÓN DE SALIDA
+# ═══════════════════════════════════════════════════════════════════════════════
+
+output_validation:
+  must_contain:
+    - "void main()"
+    - "late"
+    - "Mock"
+    - "setUp("
+    - "group("
+    - "test("
+    - "when("
+    - "expect("
+    - "verify("
+    - "// Arrange"
+    - "// Act"
+    - "// Assert"
+
+  must_not_contain:
+    - "print("
+    - "debugPrint"
+    - "skip:"
+
+  coverage_requirements:
+    - "Al menos 1 test de éxito"
+    - "Al menos 1 test de error"
+    - "Tests para cada validación especificada"

@@ -1,0 +1,346 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# ESPECIFICACIÓN DEL FEATURE: AUTH
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# Este archivo define COMPLETAMENTE el feature de autenticación.
+# La IA debe implementar EXACTAMENTE lo que está aquí especificado.
+#
+# ═══════════════════════════════════════════════════════════════════════════════
+
+feature:
+  name: auth
+  description: "Feature de autenticación de usuarios"
+  version: "1.0.0"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ENTIDADES DEL DOMINIO
+# ═══════════════════════════════════════════════════════════════════════════════
+
+entities:
+  - name: User
+    description: "Representa un usuario autenticado en el sistema"
+    properties:
+      - name: id
+        type: String
+        required: true
+        description: "Identificador único del usuario"
+      - name: email
+        type: String
+        required: true
+        description: "Email del usuario"
+      - name: name
+        type: String
+        required: true
+        description: "Nombre completo del usuario"
+      - name: avatarUrl
+        type: String?
+        required: false
+        description: "URL del avatar del usuario"
+      - name: createdAt
+        type: DateTime
+        required: true
+        description: "Fecha de creación de la cuenta"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CASOS DE USO
+# ═══════════════════════════════════════════════════════════════════════════════
+
+usecases:
+  - name: Login
+    description: "Autentica un usuario con email y contraseña"
+    return_type: User
+    params:
+      - name: email
+        type: String
+        required: true
+        validation: "Debe ser un email válido (contener @)"
+      - name: password
+        type: String
+        required: true
+        validation: "Debe tener mínimo 6 caracteres"
+    validations:
+      - "Si email está vacío, retornar ValidationFailure"
+      - "Si password tiene menos de 6 caracteres, retornar ValidationFailure"
+    failures:
+      - InvalidCredentialsFailure: "Credenciales inválidas"
+      - NetworkFailure: "Sin conexión a internet"
+      - ServerFailure: "Error del servidor"
+
+  - name: Logout
+    description: "Cierra la sesión del usuario actual"
+    return_type: void
+    params: []
+    validations: []
+    failures:
+      - ServerFailure: "Error al cerrar sesión"
+
+  - name: GetCurrentUser
+    description: "Obtiene el usuario actualmente autenticado"
+    return_type: User?
+    params: []
+    validations: []
+    failures:
+      - CacheFailure: "Error de caché"
+
+  - name: Register
+    description: "Registra un nuevo usuario en el sistema"
+    return_type: User
+    params:
+      - name: email
+        type: String
+        required: true
+        validation: "Debe ser un email válido"
+      - name: password
+        type: String
+        required: true
+        validation: "Debe tener mínimo 6 caracteres"
+      - name: name
+        type: String
+        required: true
+        validation: "No puede estar vacío"
+    failures:
+      - EmailAlreadyExistsFailure: "El email ya está registrado"
+      - ValidationFailure: "Datos de entrada inválidos"
+      - ServerFailure: "Error del servidor"
+
+  - name: CheckAuthStatus
+    description: "Verifica si hay una sesión activa"
+    return_type: bool
+    params: []
+    validations: []
+    failures: []
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# REPOSITORY
+# ═══════════════════════════════════════════════════════════════════════════════
+
+repository:
+  name: AuthRepository
+  has_remote_datasource: true
+  has_local_datasource: true
+  methods:
+    - name: login
+      return_type: User
+      params:
+        - name: email
+          type: String
+        - name: password
+          type: String
+      description: "Autentica usuario en servidor"
+
+    - name: logout
+      return_type: void
+      description: "Cierra sesión en servidor y limpia caché"
+
+    - name: getCurrentUser
+      return_type: User?
+      description: "Obtiene usuario del caché o servidor"
+
+    - name: register
+      return_type: User
+      params:
+        - name: email
+          type: String
+        - name: password
+          type: String
+        - name: name
+          type: String
+      description: "Registra nuevo usuario"
+
+    - name: isAuthenticated
+      return_type: bool
+      description: "Verifica si hay token válido"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# API ENDPOINTS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+api:
+  base_url: "/api/v1/auth"
+  endpoints:
+    - method: POST
+      path: /login
+      description: "Login con credenciales"
+      request:
+        body:
+          email: String
+          password: String
+      response:
+        success:
+          user: UserModel
+          token: String
+        errors:
+          401: "Credenciales inválidas"
+          500: "Error del servidor"
+
+    - method: POST
+      path: /logout
+      description: "Cerrar sesión"
+      request:
+        headers:
+          Authorization: "Bearer {token}"
+      response:
+        success:
+          message: String
+        errors:
+          401: "No autorizado"
+
+    - method: GET
+      path: /me
+      description: "Obtener usuario actual"
+      request:
+        headers:
+          Authorization: "Bearer {token}"
+      response:
+        success:
+          user: UserModel
+        errors:
+          401: "Token inválido"
+
+    - method: POST
+      path: /register
+      description: "Registrar nuevo usuario"
+      request:
+        body:
+          email: String
+          password: String
+          name: String
+      response:
+        success:
+          user: UserModel
+          token: String
+        errors:
+          400: "Email ya existe"
+          500: "Error del servidor"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# BLOC
+# ═══════════════════════════════════════════════════════════════════════════════
+
+bloc:
+  name: Auth
+  events:
+    - name: LoginRequested
+      description: "Usuario solicita login"
+      params:
+        - name: email
+          type: String
+        - name: password
+          type: String
+
+    - name: LogoutRequested
+      description: "Usuario solicita logout"
+
+    - name: RegisterRequested
+      description: "Usuario solicita registro"
+      params:
+        - name: email
+          type: String
+        - name: password
+          type: String
+        - name: name
+          type: String
+
+    - name: CheckAuthStatusRequested
+      description: "Verificar estado de autenticación"
+
+  states:
+    - name: Initial
+      description: "Estado inicial, sin verificar autenticación"
+
+    - name: Loading
+      description: "Procesando operación de autenticación"
+
+    - name: Authenticated
+      description: "Usuario autenticado"
+      properties:
+        - name: user
+          type: User
+
+    - name: Unauthenticated
+      description: "Usuario no autenticado"
+
+    - name: Error
+      description: "Error en operación de autenticación"
+      properties:
+        - name: message
+          type: String
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# UI
+# ═══════════════════════════════════════════════════════════════════════════════
+
+ui:
+  pages:
+    - name: LoginPage
+      route: /login
+      description: "Página de inicio de sesión"
+      components:
+        - EmailTextField
+        - PasswordTextField
+        - LoginButton
+        - RegisterLink
+
+    - name: RegisterPage
+      route: /register
+      description: "Página de registro"
+      components:
+        - NameTextField
+        - EmailTextField
+        - PasswordTextField
+        - ConfirmPasswordTextField
+        - RegisterButton
+
+  widgets:
+    - name: EmailTextField
+      type: TextFormField
+      validation: "Email válido"
+
+    - name: PasswordTextField
+      type: TextFormField
+      obscureText: true
+      validation: "Mínimo 6 caracteres"
+
+    - name: LoginButton
+      type: ElevatedButton
+      onPressed: "Dispatch LoginRequested"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TESTS REQUERIDOS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+tests:
+  unit:
+    usecases:
+      - LoginUseCase:
+          - "debe retornar User cuando login es exitoso"
+          - "debe retornar InvalidCredentialsFailure cuando credenciales son incorrectas"
+          - "debe retornar ValidationFailure cuando email está vacío"
+          - "debe retornar ValidationFailure cuando password tiene menos de 6 caracteres"
+          - "debe llamar al repository exactamente una vez"
+
+      - LogoutUseCase:
+          - "debe completar sin error cuando logout es exitoso"
+          - "debe limpiar datos locales incluso si servidor falla"
+
+      - GetCurrentUserUseCase:
+          - "debe retornar User cuando hay usuario en caché"
+          - "debe retornar null cuando no hay usuario"
+
+    repository:
+      - AuthRepositoryImpl:
+          - "debe retornar NetworkFailure cuando no hay conexión"
+          - "debe cachear usuario después de login exitoso"
+          - "debe limpiar caché en logout"
+
+  bloc:
+    - AuthBloc:
+        - "estado inicial es AuthInitial"
+        - "emite [Loading, Authenticated] cuando login es exitoso"
+        - "emite [Loading, Error] cuando login falla"
+        - "emite [Loading, Unauthenticated] cuando logout es exitoso"
+
+  integration:
+    - "flujo completo de login exitoso"
+    - "flujo completo de registro exitoso"
+    - "persistencia de sesión después de cerrar app"

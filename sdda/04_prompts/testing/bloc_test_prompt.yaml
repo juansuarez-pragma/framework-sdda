@@ -1,0 +1,225 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# PROMPT TEMPLATE: Generación de Tests para BLoC
+# ═══════════════════════════════════════════════════════════════════════════════
+
+id: generate_bloc_test
+version: "1.0"
+category: testing
+description: "Genera tests unitarios para un BLoC usando bloc_test"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PARÁMETROS REQUERIDOS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+parameters:
+  required:
+    - name: feature_name
+      type: string
+      description: "Nombre del feature"
+
+    - name: bloc_name
+      type: string
+      description: "Nombre del BLoC (sin sufijo Bloc)"
+
+    - name: events
+      type: list
+      description: "Lista de eventos a testear"
+      schema:
+        - name: string
+        - usecase: string
+        - success_state: string
+        - error_state: string
+
+    - name: usecases
+      type: list
+      description: "UseCases que usa el BLoC"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TEMPLATE DEL PROMPT
+# ═══════════════════════════════════════════════════════════════════════════════
+
+prompt_template: |
+  ## Tarea
+  Genera tests unitarios para `{{bloc_name}}Bloc` del feature `{{feature_name}}`.
+
+  ## Especificación
+
+  ### BLoC a Testear
+  - **Nombre**: {{bloc_name}}Bloc
+  - **Feature**: {{feature_name}}
+
+  ### UseCases
+  {% for usecase in usecases %}
+  - `{{usecase}}`
+  {% endfor %}
+
+  ### Eventos a Testear
+  {% for event in events %}
+  #### {{event.name}}
+  - UseCase: {{event.usecase}}
+  - Estado éxito: {{event.success_state}}
+  - Estado error: {{event.error_state}}
+  {% endfor %}
+
+  ## Archivo a Generar
+
+  `test/features/{{feature_name}}/presentation/bloc/{{feature_name}}_bloc_test.dart`
+
+  ## Requisitos de Implementación
+
+  ### Dependencias
+  ```dart
+  import 'package:bloc_test/bloc_test.dart';
+  import 'package:flutter_test/flutter_test.dart';
+  import 'package:mocktail/mocktail.dart';
+  import 'package:dartz/dartz.dart';
+  ```
+
+  ### Estructura del Test
+  ```dart
+  void main() {
+    // Declaraciones
+    late {{bloc_name}}Bloc sut;
+    {% for usecase in usecases %}
+    late Mock{{usecase}} mock{{usecase}};
+    {% endfor %}
+
+    // Test data
+    final tData = ...;
+    final tFailure = ServerFailure('Error de prueba');
+
+    // setUp
+    setUp(() {
+      {% for usecase in usecases %}
+      mock{{usecase}} = Mock{{usecase}}();
+      {% endfor %}
+      sut = {{bloc_name}}Bloc(
+        {% for usecase in usecases %}
+        mock{{usecase}},
+        {% endfor %}
+      );
+    });
+
+    // registerFallbackValue para any()
+    setUpAll(() {
+      registerFallbackValue({{bloc_name}}Params(...));
+    });
+
+    // Tests con blocTest
+    group('{{bloc_name}}Bloc', () {
+      // Tests por evento
+    });
+  }
+  ```
+
+  ### Patrón blocTest
+  ```dart
+  blocTest<{{bloc_name}}Bloc, {{bloc_name}}State>(
+    'emite [Loading, Loaded] cuando evento es exitoso',
+    build: () {
+      when(() => mockUseCase(any()))
+          .thenAnswer((_) async => Right(tData));
+      return sut;
+    },
+    act: (bloc) => bloc.add(const EventName()),
+    expect: () => [
+      const {{bloc_name}}Loading(),
+      {{bloc_name}}Loaded(data: tData),
+    ],
+    verify: (_) {
+      verify(() => mockUseCase(any())).called(1);
+    },
+  );
+  ```
+
+  ### Tests Obligatorios por Evento
+
+  {% for event in events %}
+  #### {{event.name}}
+  1. **Test de éxito**
+     ```dart
+     blocTest<{{bloc_name}}Bloc, {{bloc_name}}State>(
+       'emite [Loading, {{event.success_state}}] cuando {{event.name}} es exitoso',
+       // ...
+     );
+     ```
+
+  2. **Test de error**
+     ```dart
+     blocTest<{{bloc_name}}Bloc, {{bloc_name}}State>(
+       'emite [Loading, {{event.error_state}}] cuando {{event.name}} falla',
+       // ...
+     );
+     ```
+
+  3. **Test de verificación de llamada**
+     - Verificar que usecase es llamado con params correctos
+  {% endfor %}
+
+  ### Tests de Estado Inicial
+  ```dart
+  test('estado inicial es {{bloc_name}}Initial', () {
+    expect(sut.state, const {{bloc_name}}Initial());
+  });
+  ```
+
+  ### Mocks
+  ```dart
+  {% for usecase in usecases %}
+  class Mock{{usecase}} extends Mock implements {{usecase}} {}
+  {% endfor %}
+  ```
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# EJEMPLO DE USO
+# ═══════════════════════════════════════════════════════════════════════════════
+
+example:
+  input:
+    feature_name: "auth"
+    bloc_name: "Auth"
+    usecases:
+      - "LoginUseCase"
+      - "LogoutUseCase"
+      - "GetCurrentUserUseCase"
+    events:
+      - name: "LoginRequested"
+        usecase: "LoginUseCase"
+        success_state: "AuthAuthenticated"
+        error_state: "AuthError"
+      - name: "LogoutRequested"
+        usecase: "LogoutUseCase"
+        success_state: "AuthInitial"
+        error_state: "AuthError"
+      - name: "CheckAuthStatus"
+        usecase: "GetCurrentUserUseCase"
+        success_state: "AuthAuthenticated"
+        error_state: "AuthUnauthenticated"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# VALIDACIÓN DE SALIDA
+# ═══════════════════════════════════════════════════════════════════════════════
+
+output_validation:
+  must_contain:
+    - "blocTest<"
+    - "build:"
+    - "act:"
+    - "expect:"
+    - "Mock"
+    - "when("
+    - "verify("
+    - "Right("
+    - "Left("
+    - "registerFallbackValue"
+
+  must_not_contain:
+    - "print("
+    - "skip:"
+    - "await Future.delayed"
+
+  coverage_requirements:
+    - "Test de estado inicial"
+    - "Test de éxito por cada evento"
+    - "Test de error por cada evento"
+    - "Verificación de llamadas a usecases"
