@@ -4,6 +4,23 @@ Indicadores clave para medir la efectividad del desarrollo con SDDA.
 
 ---
 
+## Principio Fundamental de Cobertura
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│   SDDA REQUIERE 100% DE COBERTURA EN CÓDIGO TESTEABLE                      │
+│                                                                             │
+│   "Si el código tiene lógica, DEBE tener test"                             │
+│   "Si no tiene test, NO se genera"                                          │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+El objetivo de SDDA es generar código **100% correcto**. Esto solo es verificable con **100% de cobertura** en código que contiene lógica.
+
+---
+
 ## Categorías de Métricas
 
 1. [Métricas de Calidad de Código](#métricas-de-calidad-de-código)
@@ -22,10 +39,12 @@ Indicadores clave para medir la efectividad del desarrollo con SDDA.
 
 | Nivel | Cobertura | Estado |
 |-------|-----------|--------|
-| Crítico | < 60% | 🔴 Inaceptable |
-| Bajo | 60-79% | 🟡 Mejorar |
-| **Target** | **≥ 80%** | 🟢 **Aceptable** |
-| Excelente | ≥ 90% | 🟢 Óptimo |
+| Crítico | < 80% | 🔴 Inaceptable |
+| Insuficiente | 80-94% | 🟡 Mejorar |
+| Aceptable | 95-99% | 🟢 Casi completo |
+| **Target SDDA** | **100%*** | 🟢 **Requerido** |
+
+*\*100% del código testeable (ver [Excepciones Justificadas](#excepciones-justificadas-al-100))*
 
 **Cómo medir**:
 ```bash
@@ -33,16 +52,75 @@ flutter test --coverage
 lcov --summary coverage/lcov.info
 
 # Output esperado:
-# lines......: 85.3% (1234 of 1447 lines)
+# lines......: 100.0% (1447 of 1447 lines)
 ```
 
-**Por capa**:
-| Capa | Target Mínimo |
-|------|---------------|
-| Domain (UseCases) | 95% |
-| Data (Repositories) | 85% |
-| Presentation (BLoC) | 90% |
-| Presentation (Widgets) | 70% |
+**Por capa (OBLIGATORIO)**:
+| Capa | Target | Justificación |
+|------|--------|---------------|
+| Domain (Entities) | 100% | Lógica de negocio pura |
+| Domain (UseCases) | 100% | Reglas de negocio críticas |
+| Data (Repositories) | 100% | Coordinación de datos |
+| Data (DataSources) | 100% | Comunicación externa |
+| Data (Models) | 100%* | Serialización JSON |
+| Presentation (BLoC) | 100% | Gestión de estado |
+| Presentation (Widgets) | 100%** | Comportamiento UI |
+
+*\*Excluir código auto-generado (.g.dart)*
+*\*\*Excluir widgets puramente declarativos sin lógica*
+
+---
+
+### Excepciones Justificadas al 100%
+
+Basado en investigación de [Very Good Ventures](https://www.verygood.ventures/blog/road-to-100-test-coverage) y mejores prácticas de la industria, las **únicas excepciones válidas** son:
+
+#### ✅ Código que PUEDE excluirse del coverage
+
+| Tipo | Razón | Ejemplo |
+|------|-------|---------|
+| **Código auto-generado** | No es código que escribimos | `*.g.dart`, `*.freezed.dart` |
+| **Localizaciones generadas** | Generado por herramientas | `l10n/*.dart` |
+| **Assets generados** | Referencias automáticas | `assets.gen.dart` |
+| **Constructores const** | Ejecutados antes de tests | `const MyWidget()` |
+| **main() de la app** | Punto de entrada | `lib/main.dart` |
+| **Configuración de DI** | Setup de inyección | `injection.dart` |
+
+#### ❌ Código que NUNCA puede excluirse
+
+| Tipo | Razón |
+|------|-------|
+| **UseCases** | Contienen lógica de negocio |
+| **BLoCs/Cubits** | Contienen lógica de estado |
+| **Repository Implementations** | Contienen lógica de coordinación |
+| **Validaciones** | Contienen reglas críticas |
+| **Mappers/Converters** | Contienen transformaciones |
+| **Error Handlers** | Contienen flujo de errores |
+
+#### Configuración de Exclusiones
+
+```yaml
+# lcov.yaml o en CI/CD
+exclude:
+  - "**/*.g.dart"           # json_serializable
+  - "**/*.freezed.dart"     # freezed
+  - "**/*.gen.dart"         # assets
+  - "**/l10n/**"            # localizaciones
+  - "**/injection.dart"     # DI setup
+  - "**/main.dart"          # entry point
+  - "**/firebase_options.dart"  # config generado
+```
+
+```bash
+# Comando para filtrar coverage
+lcov --remove coverage/lcov.info \
+  '**/*.g.dart' \
+  '**/*.freezed.dart' \
+  '**/l10n/*' \
+  -o coverage/lcov_filtered.info
+```
+
+---
 
 ### 2. Mutation Score (Puntuación de Mutación)
 
@@ -50,20 +128,23 @@ lcov --summary coverage/lcov.info
 
 | Nivel | Score | Interpretación |
 |-------|-------|----------------|
-| Bajo | < 50% | Tests débiles |
-| Medio | 50-69% | Tests moderados |
-| **Target** | **≥ 70%** | **Tests robustos** |
-| Alto | ≥ 85% | Tests muy robustos |
+| Crítico | < 70% | Tests no detectan cambios |
+| Insuficiente | 70-84% | Tests parcialmente efectivos |
+| Bueno | 85-94% | Tests robustos |
+| **Target SDDA** | **≥ 95%** | **Tests exhaustivos** |
+
+> **Nota**: 100% de coverage NO garantiza tests de calidad. El mutation score verifica que los tests realmente detectan errores.
 
 **Cómo medir**:
 ```bash
-# Usando mutation testing (ejemplo con stryker)
 dart run stryker:stryker
 
-# Output:
-# Mutation Score: 75.2%
-# Killed: 188, Survived: 62, Timeout: 5
+# Output esperado:
+# Mutation Score: 96.2%
+# Killed: 245, Survived: 10, Timeout: 3
 ```
+
+---
 
 ### 3. Complejidad Ciclomática
 
@@ -78,13 +159,9 @@ dart run stryker:stryker
 
 **Target SDDA**: Máximo 10 por método.
 
-**Cómo medir**:
-```bash
-dart run dart_code_metrics:metrics analyze lib/
+> **Justificación**: Código con complejidad > 10 es difícil de testear al 100%. Si la complejidad es alta, el código debe refactorizarse ANTES de generar tests.
 
-# O con flutter analyze
-flutter analyze --no-fatal-infos
-```
+---
 
 ### 4. Violaciones de Arquitectura
 
@@ -94,18 +171,10 @@ flutter analyze --no-fatal-infos
 |-----------|-----------|
 | Domain importa Data | 🔴 Crítica |
 | Domain importa Presentation | 🔴 Crítica |
-| Presentation importa Data | 🟡 Alta |
+| Presentation importa Data | 🔴 Crítica |
 | Data importa Presentation | 🔴 Crítica |
 
-**Target**: 0 violaciones.
-
-**Cómo medir**:
-```bash
-sdda validate --all --architecture
-
-# Output:
-# Architecture violations: 0
-```
+**Target**: 0 violaciones (no negociable).
 
 ---
 
@@ -117,64 +186,63 @@ sdda validate --all --architecture
 
 | Rate | Estado |
 |------|--------|
-| < 100% | 🔴 No desplegar |
+| < 100% | 🔴 **BLOQUEA DEPLOY** |
+| **100%** | 🟢 **Único valor aceptable** |
+
+> En SDDA, un test que falla significa que el código generado es incorrecto. **No se despliega código con tests fallando.**
+
+---
+
+### 6. Contract Coverage (Cobertura de Contrato)
+
+**Definición**: Porcentaje de comportamientos especificados cubiertos por tests-contrato.
+
+| Coverage | Estado |
+|----------|--------|
+| < 90% | 🔴 Especificación incompleta |
+| 90-99% | 🟡 Casi completo |
 | **100%** | 🟢 **Requerido** |
 
-**Cómo medir**:
-```bash
-flutter test
-
-# Output:
-# 00:05 +45: All tests passed!
+**Fórmula**:
+```
+Contract Coverage = (Tests escritos / Comportamientos en spec) × 100
 ```
 
-### 6. Test Execution Time
+**Cada spec DEBE tener tests para**:
+- ✅ Todos los casos de éxito
+- ✅ Todas las validaciones
+- ✅ Todos los failures definidos
+- ✅ Todos los edge cases identificados
 
-**Definición**: Tiempo total para ejecutar todos los tests.
+---
 
-| Tipo | Target |
-|------|--------|
-| Unit Tests (1000) | < 30 segundos |
-| Widget Tests (100) | < 60 segundos |
-| Integration Tests (20) | < 5 minutos |
-| E2E Tests (10) | < 10 minutos |
-
-**Cómo medir**:
-```bash
-time flutter test
-
-# Output:
-# real    0m28.456s
-```
-
-### 7. Test Distribution
-
-**Definición**: Proporción de tests por tipo (Pirámide de Testing).
+### 7. Test Distribution (Pirámide)
 
 ```
                     ┌───────────┐
-                    │   E2E     │  5-10%
+                    │   E2E     │  5%
                     │   Tests   │
                    ─┴───────────┴─
                   ┌───────────────┐
-                  │ Integration   │  15-20%
+                  │ Integration   │  15%
                   │    Tests      │
                  ─┴───────────────┴─
                 ┌───────────────────┐
-                │   Widget Tests    │  20-25%
+                │   Widget Tests    │  25%
                ─┴───────────────────┴─
               ┌───────────────────────┐
-              │     Unit Tests        │  50-60%
+              │     Unit Tests        │  55%
               └───────────────────────┘
 ```
 
-**Target Distribution**:
-| Tipo | Porcentaje |
-|------|------------|
-| Unit | 50-60% |
-| Widget | 20-25% |
-| Integration | 15-20% |
-| E2E | 5-10% |
+| Tipo | Porcentaje | Coverage interno |
+|------|------------|------------------|
+| Unit | 55% | 100% |
+| Widget | 25% | 100% |
+| Integration | 15% | 100% |
+| E2E | 5% | Flujos críticos |
+
+---
 
 ### 8. Flaky Test Rate
 
@@ -182,10 +250,11 @@ time flutter test
 
 | Rate | Estado |
 |------|--------|
-| > 5% | 🔴 Crítico |
-| 1-5% | 🟡 Atención |
-| **< 1%** | 🟢 **Target** |
-| 0% | 🟢 Óptimo |
+| > 1% | 🔴 Inaceptable |
+| 0.1-1% | 🟡 Investigar |
+| **0%** | 🟢 **Target** |
+
+> Tests flaky indican problemas de diseño. En SDDA, un test flaky es un **bug** que debe corregirse inmediatamente.
 
 ---
 
@@ -193,15 +262,13 @@ time flutter test
 
 ### 9. Feature Delivery Time
 
-**Definición**: Tiempo desde especificación hasta código validado.
-
 | Complejidad | Target |
 |-------------|--------|
 | Simple (1-2 UseCases) | 1-2 días |
 | Media (3-5 UseCases) | 3-5 días |
 | Compleja (6+ UseCases) | 1-2 semanas |
 
-**Desglose típico**:
+**Desglose típico SDDA**:
 ```
 ┌────────────────────────────────────────────────────┐
 │              Feature Delivery Time                  │
@@ -209,44 +276,46 @@ time flutter test
 │                                                     │
 │   SPECIFY    ████████░░░░░░░░░░░░░░  20%           │
 │   CONTRACT   ████████████░░░░░░░░░░  30%           │
-│   GENERATE   ████████░░░░░░░░░░░░░░  20%           │
-│   VALIDATE   ██████████████░░░░░░░░  30%           │
+│   GENERATE   ██████░░░░░░░░░░░░░░░░  15%           │
+│   VALIDATE   ██████████████████░░░░  35%           │
 │                                                     │
 └────────────────────────────────────────────────────┘
 ```
 
+> **Nota**: VALIDATE incluye asegurar 100% coverage. El tiempo adicional se compensa con **0 bugs en producción**.
+
+---
+
 ### 10. Code Generation Ratio
 
-**Definición**: Porcentaje de código generado automáticamente vs manual.
-
-| Ratio | Nivel de Automatización |
-|-------|------------------------|
-| < 50% | Bajo |
-| 50-70% | Medio |
-| **70-85%** | **Target SDDA** |
-| > 85% | Alto |
+| Ratio | Nivel |
+|-------|-------|
+| < 70% | Bajo |
+| 70-85% | Medio |
+| **85-95%** | **Target SDDA** |
+| > 95% | Óptimo |
 
 **Por componente**:
-| Componente | % Generado Esperado |
-|------------|---------------------|
-| Entities | 90% |
-| Models | 95% |
-| Repository Interface | 95% |
-| Repository Impl | 80% |
-| UseCases | 85% |
-| BLoC | 80% |
-| Widgets | 50% |
+| Componente | % Generado | % Tests Generados |
+|------------|------------|-------------------|
+| Entities | 95% | 100% |
+| Models | 98% | 100% |
+| Repository Interface | 98% | N/A |
+| Repository Impl | 90% | 100% |
+| UseCases | 95% | 100% |
+| BLoC | 90% | 100% |
+| Widgets | 60% | 100% |
+
+---
 
 ### 11. Rework Rate
 
-**Definición**: Porcentaje de código que necesita ser reescrito después de generación.
-
 | Rate | Estado |
 |------|--------|
-| > 30% | 🔴 Especificación pobre |
-| 15-30% | 🟡 Mejorar contexto |
-| **5-15%** | 🟢 **Normal** |
-| < 5% | 🟢 Excelente |
+| > 15% | 🔴 Especificación deficiente |
+| 5-15% | 🟡 Mejorar contexto |
+| **< 5%** | 🟢 **Target** |
+| 0% | 🟢 Óptimo |
 
 ---
 
@@ -254,76 +323,48 @@ time flutter test
 
 ### 12. Specification Completeness
 
-**Definición**: Qué tan completas están las especificaciones antes de generar.
+**Checklist OBLIGATORIO** (100% requerido):
 
-**Checklist** (cada ítem vale 10%):
 - [ ] Entidades definidas con todos los campos
+- [ ] Tipos de datos especificados
+- [ ] Validaciones documentadas
+- [ ] Failures listados exhaustivamente
 - [ ] UseCases con params y return types
-- [ ] Validaciones especificadas
-- [ ] Failures documentados
-- [ ] API endpoints definidos
+- [ ] API endpoints definidos (si aplica)
 - [ ] Eventos del BLoC listados
-- [ ] Estados del BLoC listados
-- [ ] Requisitos de negocio claros
-- [ ] Criterios de aceptación
-- [ ] Dependencias identificadas
+- [ ] Estados del BLoC con propiedades
+- [ ] Criterios de aceptación claros
+- [ ] Edge cases identificados
 
-**Target**: ≥ 80% antes de GENERATE.
+**Target**: 100% antes de escribir tests.
 
-### 13. Contract Coverage
+---
 
-**Definición**: Porcentaje de especificación cubierta por tests-contrato.
-
-| Coverage | Estado |
-|----------|--------|
-| < 70% | 🔴 Insuficiente |
-| 70-89% | 🟡 Aceptable |
-| **≥ 90%** | 🟢 **Target** |
-
-**Fórmula**:
-```
-Contract Coverage = (Tests escritos / Comportamientos especificados) × 100
-```
-
-### 14. First-Pass Success Rate
-
-**Definición**: Porcentaje de generaciones que pasan validación en el primer intento.
+### 13. First-Pass Success Rate
 
 | Rate | Estado |
 |------|--------|
-| < 50% | 🔴 Contexto insuficiente |
-| 50-70% | 🟡 Mejorar patrones |
-| **70-85%** | 🟢 **Normal** |
-| > 85% | 🟢 Excelente |
+| < 70% | 🔴 Contexto insuficiente |
+| 70-85% | 🟡 Mejorar patrones |
+| 85-95% | 🟢 Bueno |
+| **> 95%** | 🟢 **Target** |
 
 ---
 
 ## Métricas de IA
 
-### 15. Hallucination Rate
-
-**Definición**: Frecuencia con que la IA genera código que referencia APIs/métodos inexistentes.
+### 14. Hallucination Rate
 
 | Rate | Estado |
 |------|--------|
-| > 20% | 🔴 Contexto muy pobre |
-| 10-20% | 🟡 Mejorar documentación |
-| **< 10%** | 🟢 **Target** |
-| < 5% | 🟢 Excelente |
+| > 10% | 🔴 Contexto muy pobre |
+| 5-10% | 🟡 Mejorar documentación |
+| 1-5% | 🟢 Aceptable |
+| **< 1%** | 🟢 **Target** |
 
-**Cómo detectar**:
-```bash
-# Compilar código generado
-flutter analyze lib/features/[nuevo]/
+---
 
-# Errores de "undefined" indican alucinaciones
-# Analyzing...
-# error: Undefined name 'NonExistentClass'
-```
-
-### 16. Pattern Adherence
-
-**Definición**: Qué tan bien el código generado sigue los patrones de ejemplo.
+### 15. Pattern Adherence
 
 **Criterios** (escala 1-5):
 | Criterio | 1 | 5 |
@@ -334,18 +375,18 @@ flutter analyze lib/features/[nuevo]/
 | Documentación | Ausente | Completa |
 | Imports | Desordenados | Según convención |
 
-**Target**: Promedio ≥ 4.0
+**Target**: 5.0 (perfecto)
 
-### 17. Prompt Efficiency
+---
 
-**Definición**: Número de iteraciones de prompt necesarias para obtener código correcto.
+### 16. Prompt Efficiency
 
 | Iteraciones | Eficiencia |
 |-------------|------------|
-| 1 | 🟢 Excelente |
-| **2-3** | 🟢 **Normal** |
-| 4-5 | 🟡 Revisar prompt |
-| > 5 | 🔴 Rediseñar prompt |
+| **1** | 🟢 **Target** |
+| 2 | 🟢 Aceptable |
+| 3 | 🟡 Revisar prompt |
+| > 3 | 🔴 Rediseñar |
 
 ---
 
@@ -359,25 +400,24 @@ flutter analyze lib/features/[nuevo]/
 ## Resumen Ejecutivo
 | Métrica | Target | Actual | Estado |
 |---------|--------|--------|--------|
-| Coverage | ≥80% | 85% | 🟢 |
+| Coverage (testeable) | 100% | 100% | 🟢 |
 | Test Pass | 100% | 100% | 🟢 |
-| Mutation Score | ≥70% | 72% | 🟢 |
-| First-Pass Success | ≥70% | 75% | 🟢 |
-| Hallucination Rate | <10% | 8% | 🟢 |
+| Mutation Score | ≥95% | 96% | 🟢 |
+| First-Pass Success | ≥95% | 97% | 🟢 |
+| Hallucination Rate | <1% | 0.5% | 🟢 |
+| Rework Rate | <5% | 3% | 🟢 |
 
 ## Features Completados
-| Feature | Tiempo | Coverage | Tests |
-|---------|--------|----------|-------|
-| auth | 3 días | 92% | 45 |
-| products | 4 días | 88% | 62 |
+| Feature | Tiempo | Coverage | Mutation | Tests |
+|---------|--------|----------|----------|-------|
+| auth | 3 días | 100% | 96% | 45 |
+| products | 4 días | 100% | 95% | 62 |
 
-## Áreas de Mejora
-1. [Área 1]
-2. [Área 2]
-
-## Acciones
-1. [Acción 1]
-2. [Acción 2]
+## Código Excluido del Coverage
+| Archivo | Razón | Aprobado |
+|---------|-------|----------|
+| *.g.dart | Auto-generado | ✅ |
+| l10n/* | Localizaciones | ✅ |
 ```
 
 ---
@@ -390,10 +430,33 @@ flutter analyze lib/features/[nuevo]/
 | Mutation | stryker-mutator |
 | Complejidad | dart_code_metrics |
 | Arquitectura | `sdda validate` |
-| Tiempo | Git commits, JIRA |
+
+---
+
+## Resumen de Targets SDDA
+
+| Métrica | Target | Negociable |
+|---------|--------|------------|
+| Code Coverage (testeable) | 100% | ❌ No |
+| Test Pass Rate | 100% | ❌ No |
+| Mutation Score | ≥95% | ⚠️ Mínimo 90% |
+| Architecture Violations | 0 | ❌ No |
+| Contract Coverage | 100% | ❌ No |
+| Flaky Tests | 0% | ❌ No |
+| First-Pass Success | ≥95% | ⚠️ Mínimo 85% |
+| Hallucination Rate | <1% | ⚠️ Máximo 5% |
+| Rework Rate | <5% | ⚠️ Máximo 10% |
 
 ---
 
 ## Siguiente Paso
 
 Ver la [Guía de Evaluación](./EVALUACION.md) para interpretar estas métricas.
+
+---
+
+## Referencias
+
+- [Very Good Ventures - Road to 100% Coverage](https://www.verygood.ventures/blog/road-to-100-test-coverage)
+- [Stack Overflow - What should NOT be unit tested](https://stackoverflow.com/questions/1084336/what-should-not-be-unit-tested)
+- [100% Coverage is not trivial](https://blog.ploeh.dk/2025/11/10/100-coverage-is-not-that-trivial/)

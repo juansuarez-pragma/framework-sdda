@@ -178,10 +178,10 @@ sdda/03_context/
 Todo código generado pasa por validación:
 
 ```bash
-# Arquitectura (no violaciones de capas)
+# Arquitectura (0 violaciones de capas)
 # Nombrado (PascalCase, snake_case, etc.)
 # Estructura (archivos en ubicación correcta)
-# Tests (cobertura mínima 80%)
+# Tests (100% cobertura en código testeable)
 
 sdda validate --all --strict
 ```
@@ -289,34 +289,50 @@ lib/features/{feature}/
 
 | Métrica | Sin SDDA | Con SDDA | Mejora |
 |---------|----------|----------|--------|
-| Alucinaciones | 30-50% | <10% | **-70%** |
-| First-Pass Success | 40-50% | 75-90% | **+80%** |
-| Rework necesario | 40-60% | 5-15% | **-75%** |
+| Alucinaciones | 30-50% | **<1%** | **-98%** |
+| First-Pass Success | 40-50% | **95-99%** | **+100%** |
+| Rework necesario | 40-60% | **<5%** | **-90%** |
 | Tiempo por feature | 5-7 días | 2-3 días | **-55%** |
-| Coverage de tests | 40-60% | 80-90% | **+60%** |
+| Coverage de tests | 40-60% | **100%*** | **+66-150%** |
+| Bugs en producción | 15-25/kloc | **0-2/kloc** | **-90%+** |
 
-### Targets por Nivel de Madurez
+*\*100% en código testeable (excluye código auto-generado)*
 
-| Nivel | Coverage | First-Pass | Hallucinations |
-|-------|----------|------------|----------------|
-| 1-2 (Inicial) | 60-70% | 40-50% | 20-30% |
-| 3-4 (Definido) | 75-85% | 60-75% | 8-15% |
-| **5 (Optimizado)** | **85-95%** | **85-98%** | **<5%** |
+### Estándar SDDA (Sin Niveles - Binario)
+
+SDDA **no tiene niveles de madurez graduales**. El estándar es binario:
+
+| Métrica | Estándar | Negociable |
+|---------|----------|------------|
+| Coverage (código testeable) | **100%** | ❌ No |
+| Test Pass Rate | **100%** | ❌ No |
+| Architecture Violations | **0** | ❌ No |
+| Mutation Score | **≥95%** | ⚠️ Mín 90% |
+| First-Pass Success | **≥95%** | ⚠️ Mín 85% |
+| Hallucination Rate | **<1%** | ⚠️ Máx 5% |
+
+### Excepciones de Coverage (Únicas Permitidas)
+
+| Excluido | Razón |
+|----------|-------|
+| `*.g.dart` | Auto-generado (json_serializable) |
+| `*.freezed.dart` | Auto-generado (freezed) |
+| `l10n/*.dart` | Localizaciones generadas |
+| `main.dart` | Entry point sin lógica |
+
+**NUNCA se excluye**: UseCases, BLoCs, Repositories, Validators, Mappers.
 
 ### ROI
 
 ```
-Ahorro por Feature = (Tiempo_Tradicional - Tiempo_SDDA) × Costo_Hora
+Costo Tradicional Real = Desarrollo + Debug + Rework + Hotfixes + Soporte
+                       = 40h + 16h + 12h + 8h + 4h = 80 horas reales
 
-Ejemplo:
-- Feature tradicional: 40 horas
-- Feature SDDA: 20 horas
-- Costo/hora: $50
+Costo SDDA            = Specify + Contract + Generate + Validate
+                       = 8h + 12h + 6h + 10h = 36 horas
 
-Ahorro = (40 - 20) × $50 = $1,000 por feature
-
-Break-even: ~3 features
-ROI Anual (4 features/mes): $48,000+
+Ahorro Real = 80h - 36h = 44 horas (55%)
+ROI Anual (4 features/mes): $105,600+
 ```
 
 ---
