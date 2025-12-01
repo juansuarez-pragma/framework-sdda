@@ -306,8 +306,8 @@ lib/features/{feature}/
 
 ### Disponibilidad y contexto
 
-- Licencia MIT: uso libre en equipos y agentes (Codex, Claude, etc.) manteniendo atribución.
-- Posicionamiento: SDDA combina especificación YAML + contratos de prueba + validación automática orientada a Clean Architecture por feature. No se ha verificado externamente si es el primer framework de este tipo; se documenta como propuesta pionera con foco en test-first y guardrails anti-alucinación.
+- Licencia MIT: uso libre en equipos y agentes (Codex, Claude, etc.) manteniendo atribución; no hay dependencias privativas.
+- Posicionamiento: SDDA combina especificación YAML + contratos de prueba + validación automática orientada a Clean Architecture por feature. Con la información disponible (sin búsqueda externa), no se hallaron referencias internas a un framework idéntico; lo documentamos como iniciativa pionera, a validar cuando se realice investigación externa formal.
 
 ### Estándar SDDA (Sin Niveles - Binario)
 
