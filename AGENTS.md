@@ -27,6 +27,12 @@
 - Before opening a PR: run lints (`dart analyze` or `flutter analyze`), format, `sdda ... validate`, and full tests with coverage.
 - PRs should describe scope, include steps to reproduce/verify, link issues, and add screenshots for UI changes; mention coverage deltas when relevant.
 
+## Contexto para agentes de IA
+- Lee siempre `CODEX_GUIDANCE.md` y `CLAUDE.md` antes de generar; replica los patrones de `sdda/03_context/patterns/examples`.
+- Trabaja test-first: specs + contratos → `sdda ... generate` → `sdda ... validate` → `flutter test (--coverage)`; objetivo 100% de cobertura en código testeable.
+- Sin red externa: no inventes APIs; si falta información, deja stubs claros como en los repositorios de Auth/Orders y documenta supuestos.
+- El framework es MIT; los agentes pueden usar/generar código libremente manteniendo cabeceras y citando SDDA.
+
 ## Agent-Specific Tips
 - Always read `CODEX_GUIDANCE.md` and `CLAUDE.md` first; follow existing patterns from `sdda/03_context/patterns/examples`.
 - When adding new prompts/specs, keep YAML minimal and validated; never invent APIs—mirror the patterns in `05_generators` and demo feature implementations.

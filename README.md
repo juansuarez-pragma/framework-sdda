@@ -304,6 +304,11 @@ lib/features/{feature}/
 - Tiempo generación + validación SDDA: ~1s/feature; limpieza/imports + pruebas: 5-10 minutos.
 - Próximo objetivo: subir cobertura a ≥90%/100% cubriendo datasources/repositorios/BLoCs con lógica real y habilitando DI/UI completas.
 
+### Disponibilidad y contexto
+
+- Licencia MIT: uso libre en equipos y agentes (Codex, Claude, etc.) manteniendo atribución.
+- Posicionamiento: SDDA combina especificación YAML + contratos de prueba + validación automática orientada a Clean Architecture por feature. No se ha verificado externamente si es el primer framework de este tipo; se documenta como propuesta pionera con foco en test-first y guardrails anti-alucinación.
+
 ### Estándar SDDA (Sin Niveles - Binario)
 
 SDDA **no tiene niveles de madurez graduales**. El estándar es binario:
