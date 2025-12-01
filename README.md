@@ -307,7 +307,12 @@ lib/features/{feature}/
 ### Disponibilidad y contexto
 
 - Licencia MIT: uso libre en equipos y agentes (Codex, Claude, etc.) manteniendo atribución; no hay dependencias privativas.
-- Posicionamiento: SDDA combina especificación YAML + contratos de prueba + validación automática orientada a Clean Architecture por feature. Con la información disponible (sin búsqueda externa), no se hallaron referencias internas a un framework idéntico; lo documentamos como iniciativa pionera, a validar cuando se realice investigación externa formal.
+- Posicionamiento: SDDA combina especificación YAML + contratos de prueba + validación automática orientada a Clean Architecture por feature. Búsqueda rápida (HN/OSS) mostró alternativas cercanas pero con distinto enfoque:
+  - Encore.ts/Leap (encoredev): scaffolding full-stack y despliegue asistido por IA, sin contratos de prueba ni validador de arquitectura.
+  - Gensee (beta): optimización/QA de agentes Python existentes; no genera stack ni define especificaciones YAML.
+  - Echos (treadiehq): orquestación YAML de agentes con guardrails, sin capa de Clean Architecture ni generación de código dirigida por tests.
+  - Pctx (portofcontext): ejecución segura de código MCP/TypeScript para agentes, enfocado en sandboxing.
+  Ninguno replica la combinación “especificación + generación de código Flutter + contratos de prueba + validador SDDA”; se mantiene la afirmación de propuesta pionera, sujeta a verificación en estudios comparativos más amplios.
 
 ### Estándar SDDA (Sin Niveles - Binario)
 
