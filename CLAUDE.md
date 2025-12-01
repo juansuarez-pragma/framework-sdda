@@ -34,6 +34,12 @@ QEaC/
 ├── README.md                       # Documentación principal del framework
 ├── LICENSE                         # MIT License
 ├── CLAUDE.md                       # Este archivo (contexto para Claude)
+├── CODEX_GUIDANCE.md               # Guía para otros agentes de IA (errores comunes)
+├── ERROR_REPORT.md                 # Registro de errores resueltos
+│
+├── sdda_demo/                      # Proyecto de demostración (100% coverage)
+│   ├── lib/features/tasks/         # Feature de ejemplo completo
+│   └── test/                       # Tests con 100% cobertura
 │
 ├── docs/                           # Documentación teórica del framework
 │   ├── 00_SDDA_Plan_Maestro.md
@@ -226,7 +232,42 @@ sdda prompt bloc --feature=auth --name=Auth --usecases=LoginUseCase
 sdda prompt review --file=path/to/file.dart
 ```
 
+## Proyecto de Demostración: sdda_demo
+
+El proyecto `sdda_demo/` valida el funcionamiento del framework SDDA:
+
+| Métrica | Resultado |
+|---------|-----------|
+| Tests | **44 pasando** |
+| Cobertura | **100%** |
+| Análisis estático | **0 errores** |
+
+### Estructura del Demo
+
+```
+sdda_demo/
+├── lib/
+│   ├── core/                        # Código compartido
+│   │   ├── error/failures.dart      # Failures (100% coverage)
+│   │   └── usecases/usecase.dart    # UseCase base (100% coverage)
+│   └── features/tasks/              # Feature generado con SDDA
+│       ├── domain/                  # Entidades, UseCases, Repository interface
+│       ├── data/                    # Implementaciones
+│       └── presentation/            # BLoC, Events, States
+└── test/                            # Tests completos
+```
+
+### Nota: Conflicto dartz.Task
+
+El paquete `dartz` exporta una clase `Task` que puede conflictuar con entidades del proyecto. Solución:
+
+```dart
+import 'package:dartz/dartz.dart' hide Task;
+```
+
 ## Para Agentes de IA
+
+> **IMPORTANTE**: Ver [CODEX_GUIDANCE.md](./CODEX_GUIDANCE.md) para errores comunes y cómo evitarlos.
 
 ### REGLAS OBLIGATORIAS al Generar Código
 

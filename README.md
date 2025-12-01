@@ -381,9 +381,43 @@ sdda prompt feature --name=<nombre> --context=full
 
 ---
 
+## ✅ Proyecto de Demostración: sdda_demo
+
+El framework incluye un proyecto completo que valida su funcionamiento:
+
+```bash
+cd sdda_demo
+flutter test --coverage
+```
+
+### Resultados Verificados
+
+| Métrica | Resultado |
+|---------|-----------|
+| Tests | **44 pasando** |
+| Cobertura | **100%** |
+| Análisis estático | **0 errores** |
+
+### Feature Implementado: tasks
+
+```
+sdda_demo/lib/features/tasks/
+├── domain/
+│   ├── entities/task.dart           # Entity con Equatable
+│   ├── repositories/                # Interface del repository
+│   └── usecases/                    # GetTasksUseCase, CreateTaskUseCase
+├── data/
+│   ├── repositories/                # Implementación
+│   └── datasources/                 # Remote y Local
+└── presentation/
+    └── bloc/                        # TasksBloc, Events, States
+```
+
+---
+
 ## 🧪 Ejemplo: Feature Auth
 
-El framework incluye un ejemplo completo de autenticación:
+El framework también incluye un ejemplo completo de autenticación:
 
 ```
 sdda/06_examples/auth/
@@ -430,6 +464,34 @@ jobs:
           COVERAGE=$(lcov --summary coverage/lcov.info | grep lines | grep -oP '\d+\.\d+')
           if (( $(echo "$COVERAGE < 80" | bc -l) )); then exit 1; fi
 ```
+
+---
+
+## 🤖 Guía para Agentes de IA
+
+Si eres un agente de IA (Codex, Claude, Gemini, etc.) trabajando en este repositorio:
+
+1. **Lee primero**: [CODEX_GUIDANCE.md](./CODEX_GUIDANCE.md) - Errores comunes y cómo evitarlos
+2. **Contexto**: [CLAUDE.md](./CLAUDE.md) - Instrucciones detalladas para agentes
+3. **Referencia**: `sdda_demo/` - Código funcionando con 100% coverage
+
+### Errores Comunes a Evitar
+
+| Error | Causa | Solución |
+|-------|-------|----------|
+| Métodos no definidos | Refactor incompleto | Implementar completamente antes de usar |
+| Imports rotos | Generar código para archivos inexistentes | Usar placeholders o comentarios |
+| Conflicto `Task` | dartz exporta clase Task | Usar `import 'package:dartz/dartz.dart' hide Task;` |
+
+### Filosofía SDDA
+
+```
+Generadores = Plantillas con // TODO
+Validadores = Regex simple, no AST
+Usuario = Completa los TODOs
+```
+
+**NO intentes**: Generar código completo sin contexto, análisis profundo de AST, fixtures automáticos.
 
 ---
 
