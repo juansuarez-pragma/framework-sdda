@@ -1,0 +1,55 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# SDDA - Specification-Driven Development for AI Agents
+# Configuración del proyecto
+# ═══════════════════════════════════════════════════════════════════════════════
+
+version: "1.0"
+name: "Mi Proyecto Flutter"
+
+# Configuración de proveedores de IA
+ai_providers:
+  default: "claude"
+  providers:
+    - name: "claude"
+      model: "claude-sonnet-4-20250514"
+    - name: "openai"
+      model: "gpt-4"
+    - name: "gemini"
+      model: "gemini-pro"
+
+# Arquitectura del proyecto
+architecture:
+  pattern: "clean_architecture"
+  state_management: "bloc"
+  di_framework: "get_it_injectable"
+
+# Rutas de contexto
+context:
+  architecture: "03_context/architecture/ARCHITECTURE.md"
+  conventions: "03_context/conventions/CONVENTIONS.md"
+  patterns: "03_context/patterns/examples/"
+  api_catalog: "03_context/api/"
+  schemas: "03_context/schemas/"
+
+# Testing
+testing:
+  unit:
+    framework: "flutter_test"
+    mocking: "mocktail"
+    coverage_threshold: 80
+  bloc:
+    framework: "bloc_test"
+  integration:
+    framework: "integration_test"
+  e2e:
+    framework: "patrol"
+
+# Quality gates
+quality:
+  require_tests: true
+  require_documentation: true
+  max_complexity: 10
+  forbidden_patterns:
+    - "print("
+    - "debugPrint"
+    - "// TODO"
