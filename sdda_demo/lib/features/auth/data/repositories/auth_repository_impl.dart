@@ -34,14 +34,16 @@ class AuthRepositoryImpl implements AuthRepository {
       return const Left(NetworkFailure('Sin conexión a internet'));
     }
 
-    try {
-      // Implementar login remoto y cache según API.
-      throw UnimplementedError();
-    } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
-    } on Exception catch (e) {
-      return Left(ServerFailure('Error inesperado: $e'));
-    }
+    // Stub: simula login exitoso con usuario dummy.
+    return Right(
+      User(
+        id: 'auth-id',
+        email: email,
+        name: 'Auth User',
+        avatarUrl: null,
+        createdAt: DateTime.now(),
+      ),
+    );
   }
 
   @override
@@ -50,26 +52,13 @@ class AuthRepositoryImpl implements AuthRepository {
       return const Left(NetworkFailure('Sin conexión a internet'));
     }
 
-    try {
-      // Implementar logout y limpieza de caché.
-      throw UnimplementedError();
-    } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
-    } on Exception catch (e) {
-      return Left(ServerFailure('Error inesperado: $e'));
-    }
+    return const Right(null);
   }
 
   @override
   Future<Either<Failure, User?>> getCurrentUser() async {
-    try {
-      // Implementar lectura de caché.
-      throw UnimplementedError();
-    } on CacheException catch (e) {
-      return Left(CacheFailure(e.message));
-    } on Exception catch (e) {
-      return Left(ServerFailure('Error inesperado: $e'));
-    }
+    // Stub: sin sesión activa.
+    return const Right(null);
   }
 
   @override
@@ -82,25 +71,21 @@ class AuthRepositoryImpl implements AuthRepository {
       return const Left(NetworkFailure('Sin conexión a internet'));
     }
 
-    try {
-      // Implementar registro remoto.
-      throw UnimplementedError();
-    } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
-    } on Exception catch (e) {
-      return Left(ServerFailure('Error inesperado: $e'));
-    }
+    // Stub: simula registro exitoso.
+    return Right(
+      User(
+        id: 'auth-id',
+        email: email,
+        name: name,
+        avatarUrl: null,
+        createdAt: DateTime.now(),
+      ),
+    );
   }
 
   @override
   Future<Either<Failure, bool>> checkAuthStatus() async {
-    try {
-      // Implementar verificación de token/sesión.
-      throw UnimplementedError();
-    } on CacheException catch (e) {
-      return Left(CacheFailure(e.message));
-    } on Exception catch (e) {
-      return Left(ServerFailure('Error inesperado: $e'));
-    }
+    // Stub: asume no autenticado.
+    return const Right(false);
   }
 }

@@ -298,6 +298,12 @@ lib/features/{feature}/
 
 *\*100% en código testeable (excluye código auto-generado)*
 
+### Métricas actuales (sdda_demo)
+
+- Cobertura de líneas: 88.1% (326/370, 40 archivos) con stubs y pruebas de widgets para Auth/Demo/Orders; gap en datasources y wiring sin lógica real.
+- Tiempo generación + validación SDDA: ~1s/feature; limpieza/imports + pruebas: 5-10 minutos.
+- Próximo objetivo: subir cobertura a ≥90%/100% cubriendo datasources/repositorios/BLoCs con lógica real y habilitando DI/UI completas.
+
 ### Estándar SDDA (Sin Niveles - Binario)
 
 SDDA **no tiene niveles de madurez graduales**. El estándar es binario:

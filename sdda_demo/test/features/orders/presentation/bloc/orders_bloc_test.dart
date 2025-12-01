@@ -109,4 +109,18 @@ void main() {
       ],
     );
   });
+
+    blocTest<OrdersBloc, OrdersState>(
+      'RefreshOrders emite [Loading, Loaded]',
+      build: () {
+        when(() => mockGetOrderUseCase(any()))
+            .thenAnswer((_) async => Right<Failure, Order>(tOrder));
+        return sut;
+      },
+      act: (bloc) => bloc.add(const RefreshOrders()),
+      expect: () => [
+        const OrdersLoading(),
+        const OrdersLoaded(),
+      ],
+    );
 }

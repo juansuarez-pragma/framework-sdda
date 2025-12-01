@@ -80,4 +80,34 @@ void main() {
       ],
     );
   });
+
+  group('RefreshAuth', () {
+    blocTest<AuthBloc, AuthState>(
+      'emite [Loaded] cuando refresca con éxito',
+      build: () {
+        when(() => mockCheckAuthStatusUseCase(any()))
+            .thenAnswer((_) async => const Right(true));
+        return sut;
+      },
+      act: (bloc) => bloc.add(const RefreshAuth()),
+      expect: () => [
+        const AuthLoading(),
+        const AuthLoaded(),
+      ],
+    );
+
+    blocTest<AuthBloc, AuthState>(
+      'emite [Error] cuando refrescar falla',
+      build: () {
+        when(() => mockCheckAuthStatusUseCase(any()))
+            .thenAnswer((_) async => const Left(ServerFailure('fallo')));
+        return sut;
+      },
+      act: (bloc) => bloc.add(const RefreshAuth()),
+      expect: () => [
+        const AuthLoading(),
+        const AuthError('fallo'),
+      ],
+    );
+  });
 }
