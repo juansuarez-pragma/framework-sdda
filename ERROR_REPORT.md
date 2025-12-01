@@ -2,6 +2,8 @@
 
 Este documento resume los intentos fallidos previos y la resolución exitosa del framework SDDA.
 
+> **Para agentes de IA (Codex, etc.)**: Ver [CODEX_GUIDANCE.md](./CODEX_GUIDANCE.md) para análisis detallado de errores y cómo evitarlos.
+
 ## Estado Anterior (Problemas Reportados)
 
 ### Errores observados (antes de revertir)
