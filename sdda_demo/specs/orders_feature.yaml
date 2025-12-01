@@ -1,0 +1,73 @@
+feature: orders
+description: "Feature para gestionar órdenes con ítems anidados"
+
+entities:
+  - name: OrderItem
+    properties:
+      - name: id
+        type: String
+        required: true
+      - name: name
+        type: String
+        required: true
+      - name: quantity
+        type: int
+        required: true
+      - name: price
+        type: double
+        required: true
+
+  - name: Order
+    properties:
+      - name: id
+        type: String
+        required: true
+      - name: items
+        type: List<OrderItem>
+        required: true
+      - name: total
+        type: double
+        required: true
+      - name: createdAt
+        type: DateTime
+        required: true
+
+usecases:
+  - name: CreateOrder
+    return_type: Order
+    params:
+      - name: items
+        type: List<OrderItem>
+        required: true
+  - name: GetOrder
+    return_type: Order
+    params:
+      - name: id
+        type: String
+        required: true
+  - name: CancelOrder
+    return_type: void
+    params:
+      - name: id
+        type: String
+        required: true
+
+has_local_datasource: true
+has_remote_datasource: true
+
+repository_methods:
+  - name: createOrder
+    return_type: Order
+    params:
+      - name: items
+        type: List<OrderItem>
+  - name: getOrder
+    return_type: Order
+    params:
+      - name: id
+        type: String
+  - name: cancelOrder
+    return_type: void
+    params:
+      - name: id
+        type: String
