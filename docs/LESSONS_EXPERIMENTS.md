@@ -17,7 +17,7 @@
 - Tiempos: generación/validación ~1s cada una; corrección + pruebas en minutos.
 - Cobertura: no medida explícitamente en estos runs, pero la suite completa pasó; cuando se ejecute `flutter test --coverage`, la expectativa es ≥80% en código testeable (excluyendo archivos generados), y meta SDDA declarada de 100% en código testeable.
 - Estabilidad: tras corregir imports y placeholders, las ejecuciones de `flutter test` permanecen verdes de forma repetible; el costo principal es la primera limpieza post-generación.
-- Cobertura actual (`flutter test --coverage` + `lcov --summary`): 91.6% (164/179 líneas, 23 archivos).
+- Cobertura (`flutter test --coverage` + `lcov --summary`): 91.6% (164/179 líneas, 23 archivos) antes de orders; 86.2% (206/239 líneas, 31 archivos) tras agregar orders (stubs nuevos reducen el porcentaje).
 
 ## Guía Rápida para Agentes (Codex/Claude/otros)
 - Leer `CODEX_GUIDANCE.md` y `CLAUDE.md` antes de tocar generadores.
