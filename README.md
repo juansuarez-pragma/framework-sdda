@@ -378,6 +378,7 @@ sdda prompt feature --name=<nombre> --context=full
 | [CLI Reference](sdda/docs/api/CLI_REFERENCE.md) | Comandos detallados |
 | [Troubleshooting](sdda/docs/guides/TROUBLESHOOTING.md) | Solución de problemas |
 | [FAQ](sdda/docs/guides/FAQ.md) | Preguntas frecuentes |
+| [Lecciones de Experimentos](docs/LESSONS_EXPERIMENTS.md) | Ajustes y resultados recientes (demo/auth) |
 
 ---
 

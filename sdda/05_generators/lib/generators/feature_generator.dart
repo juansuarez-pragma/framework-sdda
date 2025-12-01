@@ -28,6 +28,18 @@ class FeatureGenerator {
       _spec = Map<String, dynamic>.from(loadYaml(content) as Map);
     }
 
+    final repoMethods = (_spec?['repository_methods'] as List?)
+        ?.map((method) {
+          final mapped = Map<String, dynamic>.from(method as Map);
+          final params = mapped['params'];
+          if (params is List) {
+            mapped['params'] =
+                params.map((p) => Map<String, dynamic>.from(p as Map)).toList();
+          }
+          return mapped;
+        })
+        .toList();
+
     // Crear estructura de carpetas
     await _createDirectoryStructure();
 
@@ -40,7 +52,7 @@ class FeatureGenerator {
       featureName: featureName,
       hasLocalDataSource: _spec?['has_local_datasource'] ?? true,
       hasRemoteDataSource: _spec?['has_remote_datasource'] ?? true,
-      methods: _spec?['repository_methods'] ?? [],
+      methods: repoMethods ?? [],
     );
     files.addAll(await repoGenerator.generate());
 
