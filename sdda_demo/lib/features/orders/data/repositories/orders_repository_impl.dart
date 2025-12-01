@@ -1,5 +1,5 @@
 import 'package:dartz/dartz.dart' hide Order;
-import 'package:injectable/injectable.dart';
+import 'package:injectable/injectable.dart' hide Order;
 
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/error/failures.dart';
@@ -32,14 +32,15 @@ class OrdersRepositoryImpl implements OrdersRepository {
       return const Left(NetworkFailure('Sin conexión a internet'));
     }
 
-    try {
-      // Implementar creación remota/local con mapeo de modelos.
-      throw UnimplementedError();
-    } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
-    } on Exception catch (e) {
-      return Left(ServerFailure('Error inesperado: $e'));
-    }
+    // Stub: retornar éxito con orden vacía. Reemplazar cuando se integre la API.
+    return Right(
+      Order(
+        id: 'temp',
+        items: items,
+        total: 0,
+        createdAt: DateTime.now(),
+      ),
+    );
   }
 
   @override
@@ -48,14 +49,14 @@ class OrdersRepositoryImpl implements OrdersRepository {
       return const Left(NetworkFailure('Sin conexión a internet'));
     }
 
-    try {
-      // Implementar obtención remota/local y mapeo a entidad.
-      throw UnimplementedError();
-    } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
-    } on Exception catch (e) {
-      return Left(ServerFailure('Error inesperado: $e'));
-    }
+    return Right(
+      Order(
+        id: id,
+        items: const [],
+        total: 0,
+        createdAt: DateTime.now(),
+      ),
+    );
   }
 
   @override
@@ -64,13 +65,6 @@ class OrdersRepositoryImpl implements OrdersRepository {
       return const Left(NetworkFailure('Sin conexión a internet'));
     }
 
-    try {
-      // Implementar cancelación y sincronización de caché.
-      throw UnimplementedError();
-    } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
-    } on Exception catch (e) {
-      return Left(ServerFailure('Error inesperado: $e'));
-    }
+    return const Right(null);
   }
 }
